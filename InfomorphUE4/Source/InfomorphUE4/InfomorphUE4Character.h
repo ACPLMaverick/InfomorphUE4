@@ -11,6 +11,12 @@ class AInfomorphUE4Character : public ACharacter
 {
 	GENERATED_BODY()
 
+protected:
+	bool bIsInStealthMode;
+
+	bool bIsCameraLocked;
+	AActor* CameraTarget;
+
 	/** Camera boom positioning the camera behind the character */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class USpringArmComponent* CameraBoom;
@@ -18,55 +24,43 @@ class AInfomorphUE4Character : public ACharacter
 	/** Follow camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class UCameraComponent* FollowCamera;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
+	UArrowComponent* EyesArrow;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
+		float LookAndMoveTimerThreshold;
+
 public:
 	AInfomorphUE4Character();
 
-	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
-	float BaseTurnRate;
+	virtual void Tick(float DeltaSeconds);
 
-	/** Base look up/down rate, in deg/sec. Other scaling may affect final rate. */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
-	float BaseLookUpRate;
+	virtual void StartBlock();
+	virtual void EndBlock();
+	virtual void Dodge();
+	virtual void EnterStealthMode();
+	virtual void ExitStealthMode();
+	virtual void Attack();
+	virtual void HeavyAttack();
+	virtual void SpecialAttack();
+	virtual void SpecialAbility();
+	virtual void LockCameraOnTarget(AActor* Target);
+	virtual void UnlockCamera();
 
-protected:
+	UFUNCTION(BlueprintCallable, Category = Movement)
+	FORCEINLINE bool IsInStealthMode() const { return bIsInStealthMode; }
 
-	/** Resets HMD orientation in VR. */
-	void OnResetVR();
+	UFUNCTION(BlueprintCallable, Category = Movement)
+	FORCEINLINE bool IsCameraLocked() const { return bIsCameraLocked; }
 
-	/** Called for forwards/backward input */
-	void MoveForward(float Value);
+	UFUNCTION(BlueprintCallable, Category = Camera)
+	FVector GetEyesLocation() const;
 
-	/** Called for side to side input */
-	void MoveRight(float Value);
+	UFUNCTION(BlueprintCallable, Category = Camera)
+	FVector GetEyesDirection() const;
 
-	/** 
-	 * Called via input to turn at a given rate. 
-	 * @param Rate	This is a normalized rate, i.e. 1.0 means 100% of desired turn rate
-	 */
-	void TurnAtRate(float Rate);
-
-	/**
-	 * Called via input to turn look up/down at a given rate. 
-	 * @param Rate	This is a normalized rate, i.e. 1.0 means 100% of desired turn rate
-	 */
-	void LookUpAtRate(float Rate);
-
-	/** Handler for when a touch input begins. */
-	void TouchStarted(ETouchIndex::Type FingerIndex, FVector Location);
-
-	/** Handler for when a touch input stops. */
-	void TouchStopped(ETouchIndex::Type FingerIndex, FVector Location);
-
-protected:
-	// APawn interface
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-	// End of APawn interface
-
-public:
-	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
-	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 };
 

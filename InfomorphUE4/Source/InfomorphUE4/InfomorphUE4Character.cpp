@@ -1,6 +1,8 @@
 // Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "InfomorphUE4Character.h"
+#include "InfomorphUE4.h"
+#include "InfomorphPlayerController.h"
 #include "Kismet/HeadMountedDisplayFunctionLibrary.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -8,6 +10,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Runtime/Engine/Classes/Components/ArrowComponent.h"
 
 //////////////////////////////////////////////////////////////////////////
 // AInfomorphUE4Character
@@ -16,10 +19,6 @@ AInfomorphUE4Character::AInfomorphUE4Character()
 {
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
-
-	// set our turn rates for input
-	BaseTurnRate = 45.f;
-	BaseLookUpRate = 45.f;
 
 	// Don't rotate when the controller rotates. Let that just affect the camera.
 	bUseControllerRotationPitch = false;
@@ -31,6 +30,8 @@ AInfomorphUE4Character::AInfomorphUE4Character()
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 540.0f, 0.0f); // ...at this rotation rate
 	GetCharacterMovement()->JumpZVelocity = 600.f;
 	GetCharacterMovement()->AirControl = 0.2f;
+	GetCharacterMovement()->MaxWalkSpeed = 375.0f;
+	GetCharacterMovement()->MaxWalkSpeedCrouched = 100.0f;
 
 	// Create a camera boom (pulls in towards the player if there is a collision)
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
@@ -43,92 +44,138 @@ AInfomorphUE4Character::AInfomorphUE4Character()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
-	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
-	// are set in the derived blueprint asset named MyCharacter (to avoid direct content references in C++)
+	EyesArrow = CreateDefaultSubobject<UArrowComponent>(TEXT("EyesArrow"));
+	EyesArrow->SetupAttachment(FollowCamera);
+
+	bIsInStealthMode = false;
+
+	CameraTarget = nullptr;
+	bIsCameraLocked = false;
+	LookAndMoveTimerThreshold = 2.0f;
 }
 
-//////////////////////////////////////////////////////////////////////////
-// Input
-
-void AInfomorphUE4Character::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
+void AInfomorphUE4Character::Tick(float DeltaSeconds)
 {
-	// Set up gameplay key bindings
-	check(PlayerInputComponent);
-	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
-	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
+	Super::Tick(DeltaSeconds);
 
-	PlayerInputComponent->BindAxis("MoveForward", this, &AInfomorphUE4Character::MoveForward);
-	PlayerInputComponent->BindAxis("MoveRight", this, &AInfomorphUE4Character::MoveRight);
-
-	// We have 2 versions of the rotation bindings to handle different kinds of devices differently
-	// "turn" handles devices that provide an absolute delta, such as a mouse.
-	// "turnrate" is for devices that we choose to treat as a rate of change, such as an analog joystick
-	PlayerInputComponent->BindAxis("Turn", this, &APawn::AddControllerYawInput);
-	PlayerInputComponent->BindAxis("TurnRate", this, &AInfomorphUE4Character::TurnAtRate);
-	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
-	PlayerInputComponent->BindAxis("LookUpRate", this, &AInfomorphUE4Character::LookUpAtRate);
-
-	// handle touch devices
-	PlayerInputComponent->BindTouch(IE_Pressed, this, &AInfomorphUE4Character::TouchStarted);
-	PlayerInputComponent->BindTouch(IE_Released, this, &AInfomorphUE4Character::TouchStopped);
-
-	// VR headset functionality
-	PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &AInfomorphUE4Character::OnResetVR);
-}
-
-
-void AInfomorphUE4Character::OnResetVR()
-{
-	UHeadMountedDisplayFunctionLibrary::ResetOrientationAndPosition();
-}
-
-void AInfomorphUE4Character::TouchStarted(ETouchIndex::Type FingerIndex, FVector Location)
-{
-		Jump();
-}
-
-void AInfomorphUE4Character::TouchStopped(ETouchIndex::Type FingerIndex, FVector Location)
-{
-		StopJumping();
-}
-
-void AInfomorphUE4Character::TurnAtRate(float Rate)
-{
-	// calculate delta for this frame from the rate information
-	AddControllerYawInput(Rate * BaseTurnRate * GetWorld()->GetDeltaSeconds());
-}
-
-void AInfomorphUE4Character::LookUpAtRate(float Rate)
-{
-	// calculate delta for this frame from the rate information
-	AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
-}
-
-void AInfomorphUE4Character::MoveForward(float Value)
-{
-	if ((Controller != NULL) && (Value != 0.0f))
+	if(bIsCameraLocked && CameraTarget != nullptr)
 	{
-		// find out which way is forward
-		const FRotator Rotation = Controller->GetControlRotation();
-		const FRotator YawRotation(0, Rotation.Yaw, 0);
+		FVector Direction = CameraTarget->GetActorLocation() - GetActorLocation();
+		Direction.Normalize();
+		FRotator LookRotation = Direction.Rotation();
 
-		// get forward vector
-		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-		AddMovementInput(Direction, Value);
+		AInfomorphPlayerController* InfomorphPC = Cast<AInfomorphPlayerController>(GetController());
+		if(InfomorphPC != nullptr)
+		{
+			float LastLookedTimer = InfomorphPC->GetLastLookedTimer();
+			float LastMovedTimer = InfomorphPC->GetLastMovedTimer();
+			LogOnScreen(1, FString::Printf(TEXT("LookedTimer: %.4f, MovedTimer: %.4f"), LastLookedTimer, LastMovedTimer));
+			if(LastLookedTimer > LookAndMoveTimerThreshold)
+			{
+				if(LastMovedTimer > 0.5f)
+				{
+					Controller->SetControlRotation(FMath::RInterpTo(Controller->GetControlRotation(), LookRotation, DeltaSeconds, 4.0f));
+				}
+				else
+				{
+					Controller->SetControlRotation(FMath::RInterpTo(Controller->GetControlRotation(), LookRotation, DeltaSeconds, 10.0f));
+				}
+			}
+		}
+		else
+		{
+			Controller->SetControlRotation(FMath::RInterpTo(Controller->GetControlRotation(), LookRotation, DeltaSeconds, 7.0f));
+		}
+
+
+		FRotator CharacterRotation = GetActorRotation();
+		CharacterRotation.Yaw = LookRotation.Yaw;
+		SetActorRotation(CharacterRotation);
 	}
 }
 
-void AInfomorphUE4Character::MoveRight(float Value)
+void AInfomorphUE4Character::StartBlock()
 {
-	if ( (Controller != NULL) && (Value != 0.0f) )
+
+}
+
+void AInfomorphUE4Character::EndBlock()
+{
+
+}
+
+void AInfomorphUE4Character::Dodge()
+{
+
+}
+
+void AInfomorphUE4Character::EnterStealthMode()
+{
+	if(bIsInStealthMode)
 	{
-		// find out which way is right
-		const FRotator Rotation = Controller->GetControlRotation();
-		const FRotator YawRotation(0, Rotation.Yaw, 0);
-	
-		// get right vector 
-		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-		// add movement in that direction
-		AddMovementInput(Direction, Value);
+		return;
 	}
+
+	GetCharacterMovement()->Crouch();
+	bIsInStealthMode = true;
+}
+
+void AInfomorphUE4Character::ExitStealthMode()
+{
+	if(!bIsInStealthMode)
+	{
+		return;
+	}
+
+	GetCharacterMovement()->UnCrouch();
+	bIsInStealthMode = false;
+}
+
+void AInfomorphUE4Character::Attack()
+{
+
+}
+
+void AInfomorphUE4Character::HeavyAttack()
+{
+
+}
+
+void AInfomorphUE4Character::SpecialAttack()
+{
+
+}
+
+void AInfomorphUE4Character::SpecialAbility()
+{
+
+}
+
+void AInfomorphUE4Character::LockCameraOnTarget(AActor* Target)
+{
+	CameraTarget = Target;
+	if(CameraTarget == nullptr)
+	{
+		UnlockCamera();
+		return;
+	}
+
+	bIsCameraLocked = true;
+	GetCharacterMovement()->bOrientRotationToMovement = false;
+}
+
+void AInfomorphUE4Character::UnlockCamera()
+{
+	bIsCameraLocked = false;
+	GetCharacterMovement()->bOrientRotationToMovement = true;
+}
+
+FVector AInfomorphUE4Character::GetEyesLocation() const
+{
+	return EyesArrow != nullptr ? EyesArrow->GetComponentLocation() : GetActorLocation();
+}
+
+FVector AInfomorphUE4Character::GetEyesDirection() const
+{
+	return EyesArrow != nullptr ? EyesArrow->GetComponentRotation().Vector() : GetActorRotation().Vector();
 }
