@@ -73,3 +73,7 @@ Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
+InfomorphUE4/Intermediate/
+InfomorphUE4/Saved/Config/CrashReportClient/
+*.pdb
+InfomorphUE4/Saved/
