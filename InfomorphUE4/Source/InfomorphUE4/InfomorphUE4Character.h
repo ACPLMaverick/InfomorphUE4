@@ -28,8 +28,8 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
 	UArrowComponent* EyesArrow;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
-		float LookAndMoveTimerThreshold;
+protected:
+	void ProcessCameraLocked(float DeltaSeconds);
 
 public:
 	AInfomorphUE4Character();
@@ -45,7 +45,7 @@ public:
 	virtual void HeavyAttack();
 	virtual void SpecialAttack();
 	virtual void SpecialAbility();
-	virtual void LockCameraOnTarget(AActor* Target);
+	virtual bool LockCameraOnTarget(AActor* Target);
 	virtual void UnlockCamera();
 
 	UFUNCTION(BlueprintCallable, Category = Movement)

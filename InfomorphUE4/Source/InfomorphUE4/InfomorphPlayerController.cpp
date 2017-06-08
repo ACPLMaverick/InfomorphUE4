@@ -4,6 +4,7 @@
 #include "InfomorphUE4Character.h"
 #include "InfomorphUE4.h"
 #include "Runtime/Engine/Classes/Camera/CameraComponent.h"
+#include "Runtime/CoreUObject/Public/UObject/UObjectIterator.h"
 
 void AInfomorphPlayerController::MoveForward(float Value)
 {
@@ -212,7 +213,10 @@ void AInfomorphPlayerController::PerformCameraLock()
 		{
 			FVector EyesLocation = PossessedCharacter->GetEyesLocation();
 			FVector Direction = PossessedCharacter->GetEyesDirection();
-			PossessedCharacter->LockCameraOnTarget(GetActorInLookDirection(EyesLocation, Direction));
+			if(PossessedCharacter->LockCameraOnTarget(GetActorInLookDirection(EyesLocation, Direction)))
+			{
+				LastLookedTimer = LookTimerThreshold - 0.02f;
+			}
 		}
 	}
 }
@@ -225,23 +229,61 @@ AActor* AInfomorphPlayerController::GetActorInLookDirection(const FVector& EyesL
 		return nullptr;
 	}
 
-	FCollisionQueryParams TraceParams(TEXT("LockTrace"), true, GetPawn());
+	static const FName TraceTag = TEXT("LockTrace");
+	static const float MaxDistance = 3000.0f;
 
-	FHitResult Hit;
-	bool bWasHit = World->LineTraceSingleByChannel(Hit, EyesLocation, EyesLocation + 3000.0f * Direction, ECollisionChannel::ECC_WorldStatic, TraceParams);
+	FCollisionObjectQueryParams ObjectQueryParams;
+	ObjectQueryParams.AddObjectTypesToQuery(ECollisionChannel::ECC_Pawn);
+	FCollisionQueryParams TraceParams(TraceTag, true, GetPawn());
+	World->DebugDrawTraceTag = TraceTag;
+	FCollisionShape CollisionShape;
+	CollisionShape.SetBox(FVector(300.0f, 300.0f, 300.0f));
+	FQuat Rotation = Direction.Rotation().Quaternion();
+
+	AActor* HitActor = nullptr;
+	TArray<FHitResult> Hits;
+	bool bWasHit = World->SweepMultiByObjectType(Hits, EyesLocation, EyesLocation + Direction * MaxDistance, GetControlRotation().Quaternion(), ObjectQueryParams, CollisionShape, TraceParams);
 
 	if(bWasHit)
 	{
-		return Hit.GetActor();
+		float MaxAngle = 60.0f;
+		float ClosestDistance = MaxDistance;
+		const int32 HitsSize = Hits.Num();
+		for(int32 i = 0; i < HitsSize; ++i)
+		{
+			if(Hits[i].GetActor() == nullptr || !Hits[i].GetActor()->IsA(AInfomorphUE4Character::StaticClass()))
+			{
+				continue;
+			}
+
+			FVector ToHitLocation = Hits[i].GetActor()->GetActorLocation() - EyesLocation;
+			ToHitLocation.Normalize();
+			float angle = FMath::Acos(FVector::DotProduct(Direction, ToHitLocation));
+			if(angle < MaxAngle)
+			{
+				float Distance = FVector::Distance(EyesLocation, Hits[i].GetActor()->GetActorLocation());
+				if(Distance < ClosestDistance)
+				{
+					ClosestDistance = Distance;
+					HitActor = Hits[i].GetActor();
+				}
+			}
+		}
 	}
 
-	return nullptr;
+	if(HitActor)
+	{
+		LogOnScreen(HitActor->GetName());
+	}
+
+	return HitActor;
 }
 
 AInfomorphPlayerController::AInfomorphPlayerController() : Super()
 {
 	BaseTurnRate = 45.0f;
 	BaseLookUpRate = 45.0f;
+	LookTimerThreshold = 0.75f;
 
 	AutoReceiveInput = EAutoReceiveInput::Player0;
 	PrimaryActorTick.bCanEverTick = true;
@@ -251,6 +293,7 @@ AInfomorphPlayerController::AInfomorphPlayerController(const FObjectInitializer&
 {
 	BaseTurnRate = 45.0f;
 	BaseLookUpRate = 45.0f;
+	LookTimerThreshold = 0.75f;
 
 	AutoReceiveInput = EAutoReceiveInput::Player0;
 	PrimaryActorTick.bCanEverTick = true;

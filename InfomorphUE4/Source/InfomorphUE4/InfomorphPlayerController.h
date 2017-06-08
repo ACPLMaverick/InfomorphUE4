@@ -19,6 +19,8 @@ protected:
 		float BaseTurnRate;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
 		float BaseLookUpRate;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
+		float LookTimerThreshold;
 
 	float LastLookedTimer;
 	float LastMovedTimer;
@@ -56,4 +58,5 @@ public:
 
 	FORCEINLINE float GetLastLookedTimer() const { return LastLookedTimer; }
 	FORCEINLINE float GetLastMovedTimer() const { return LastMovedTimer; }
+	FORCEINLINE float GetLookTimerTreshold() const { return LookTimerThreshold; }
 };

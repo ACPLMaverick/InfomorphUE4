@@ -15,6 +15,41 @@
 //////////////////////////////////////////////////////////////////////////
 // AInfomorphUE4Character
 
+void AInfomorphUE4Character::ProcessCameraLocked(float DeltaSeconds)
+{
+	FVector Direction = CameraTarget->GetActorLocation() - GetActorLocation();
+	Direction.Normalize();
+	FRotator LookRotation = Direction.Rotation();
+
+	AInfomorphPlayerController* InfomorphPC = Cast<AInfomorphPlayerController>(GetController());
+	if(InfomorphPC != nullptr)
+	{
+		float LastLookedTimer = InfomorphPC->GetLastLookedTimer();
+		float LastMovedTimer = InfomorphPC->GetLastMovedTimer();
+		if(LastLookedTimer > InfomorphPC->GetLookTimerTreshold())
+		{
+			if(LastMovedTimer > 0.5f)
+			{
+				Controller->SetControlRotation(FMath::RInterpTo(Controller->GetControlRotation(), LookRotation, DeltaSeconds, 3.0f));
+			}
+			else
+			{
+				Controller->SetControlRotation(FMath::RInterpTo(Controller->GetControlRotation(), LookRotation, DeltaSeconds, 5.0f));
+			}
+
+		}
+	}
+	else
+	{
+		Controller->SetControlRotation(FMath::RInterpTo(Controller->GetControlRotation(), LookRotation, DeltaSeconds, 7.0f));
+	}
+
+
+	FRotator CharacterRotation = GetActorRotation();
+	CharacterRotation.Yaw = FMath::FInterpTo(CharacterRotation.Yaw, LookRotation.Yaw, DeltaSeconds, 5.0f);
+	SetActorRotation(CharacterRotation);
+}
+
 AInfomorphUE4Character::AInfomorphUE4Character()
 {
 	// Set size for collision capsule
@@ -51,7 +86,6 @@ AInfomorphUE4Character::AInfomorphUE4Character()
 
 	CameraTarget = nullptr;
 	bIsCameraLocked = false;
-	LookAndMoveTimerThreshold = 2.0f;
 }
 
 void AInfomorphUE4Character::Tick(float DeltaSeconds)
@@ -60,37 +94,7 @@ void AInfomorphUE4Character::Tick(float DeltaSeconds)
 
 	if(bIsCameraLocked && CameraTarget != nullptr)
 	{
-		FVector Direction = CameraTarget->GetActorLocation() - GetActorLocation();
-		Direction.Normalize();
-		FRotator LookRotation = Direction.Rotation();
-
-		AInfomorphPlayerController* InfomorphPC = Cast<AInfomorphPlayerController>(GetController());
-		if(InfomorphPC != nullptr)
-		{
-			float LastLookedTimer = InfomorphPC->GetLastLookedTimer();
-			float LastMovedTimer = InfomorphPC->GetLastMovedTimer();
-			LogOnScreen(1, FString::Printf(TEXT("LookedTimer: %.4f, MovedTimer: %.4f"), LastLookedTimer, LastMovedTimer));
-			if(LastLookedTimer > LookAndMoveTimerThreshold)
-			{
-				if(LastMovedTimer > 0.5f)
-				{
-					Controller->SetControlRotation(FMath::RInterpTo(Controller->GetControlRotation(), LookRotation, DeltaSeconds, 4.0f));
-				}
-				else
-				{
-					Controller->SetControlRotation(FMath::RInterpTo(Controller->GetControlRotation(), LookRotation, DeltaSeconds, 10.0f));
-				}
-			}
-		}
-		else
-		{
-			Controller->SetControlRotation(FMath::RInterpTo(Controller->GetControlRotation(), LookRotation, DeltaSeconds, 7.0f));
-		}
-
-
-		FRotator CharacterRotation = GetActorRotation();
-		CharacterRotation.Yaw = LookRotation.Yaw;
-		SetActorRotation(CharacterRotation);
+		ProcessCameraLocked(DeltaSeconds);
 	}
 }
 
@@ -151,17 +155,18 @@ void AInfomorphUE4Character::SpecialAbility()
 
 }
 
-void AInfomorphUE4Character::LockCameraOnTarget(AActor* Target)
+bool AInfomorphUE4Character::LockCameraOnTarget(AActor* Target)
 {
 	CameraTarget = Target;
 	if(CameraTarget == nullptr)
 	{
 		UnlockCamera();
-		return;
+		return false;
 	}
 
 	bIsCameraLocked = true;
 	GetCharacterMovement()->bOrientRotationToMovement = false;
+	return true;
 }
 
 void AInfomorphUE4Character::UnlockCamera()
