@@ -8,6 +8,11 @@
 
 void AInfomorphPlayerController::MoveForward(float Value)
 {
+	if(bIsPossessing)
+	{
+		return;
+	}
+
 	ACharacter* PossessedCharacter = Cast<ACharacter>(GetPawn());
 	if(PossessedCharacter != nullptr && Value != 0.0f)
 	{
@@ -22,6 +27,11 @@ void AInfomorphPlayerController::MoveForward(float Value)
 
 void AInfomorphPlayerController::MoveRight(float Value)
 {
+	if(bIsPossessing)
+	{
+		return;
+	}
+
 	ACharacter* PossessedCharacter = Cast<ACharacter>(GetPawn());
 	if(PossessedCharacter != nullptr && Value != 0.0f)
 	{
@@ -36,6 +46,11 @@ void AInfomorphPlayerController::MoveRight(float Value)
 
 void AInfomorphPlayerController::Turn(float Value)
 {
+	if(bIsPossessing)
+	{
+		return;
+	}
+
 	if(Value != 0.0f)
 	{
 		LastLookedTimer = 0.0f;
@@ -45,6 +60,11 @@ void AInfomorphPlayerController::Turn(float Value)
 
 void AInfomorphPlayerController::TurnAtRate(float Rate)
 {
+	if(bIsPossessing)
+	{
+		return;
+	}
+
 	if(Rate != 0.0f)
 	{
 		LastLookedTimer = 0.0f;
@@ -54,6 +74,11 @@ void AInfomorphPlayerController::TurnAtRate(float Rate)
 
 void AInfomorphPlayerController::LookUp(float Value)
 {
+	if(bIsPossessing)
+	{
+		return;
+	}
+
 	if(Value != 0.0f)
 	{
 		LastLookedTimer = 0.0f;
@@ -63,6 +88,11 @@ void AInfomorphPlayerController::LookUp(float Value)
 
 void AInfomorphPlayerController::LookUpAtRate(float Rate)
 {
+	if(bIsPossessing)
+	{
+		return;
+	}
+
 	if(Rate != 0.0f)
 	{
 		LastLookedTimer = 0.0f;
@@ -72,6 +102,11 @@ void AInfomorphPlayerController::LookUpAtRate(float Rate)
 
 void AInfomorphPlayerController::PerformHeavyAttack()
 {
+	if(bIsPossessing)
+	{
+		return;
+	}
+
 	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
 	if(PossessedCharacter != nullptr)
 	{
@@ -85,6 +120,11 @@ void AInfomorphPlayerController::PerformHeavyAttack()
 
 void AInfomorphPlayerController::PerformAttack()
 {
+	if(bIsPossessing)
+	{
+		return;
+	}
+
 	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
 	if(PossessedCharacter != nullptr)
 	{
@@ -98,6 +138,11 @@ void AInfomorphPlayerController::PerformAttack()
 
 void AInfomorphPlayerController::PerformSpecialAttack()
 {
+	if(bIsPossessing)
+	{
+		return;
+	}
+
 	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
 	if(PossessedCharacter != nullptr)
 	{
@@ -111,6 +156,11 @@ void AInfomorphPlayerController::PerformSpecialAttack()
 
 void AInfomorphPlayerController::PerformStartBlock()
 {
+	if(bIsPossessing)
+	{
+		return;
+	}
+
 	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
 	if(PossessedCharacter != nullptr)
 	{
@@ -124,6 +174,11 @@ void AInfomorphPlayerController::PerformStartBlock()
 
 void AInfomorphPlayerController::PerformEndBlock()
 {
+	if(bIsPossessing)
+	{
+		return;
+	}
+
 	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
 	if(PossessedCharacter != nullptr)
 	{
@@ -137,6 +192,11 @@ void AInfomorphPlayerController::PerformEndBlock()
 
 void AInfomorphPlayerController::PerformDodge()
 {
+	if(bIsPossessing)
+	{
+		return;
+	}
+
 	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
 	if(PossessedCharacter != nullptr)
 	{
@@ -150,6 +210,11 @@ void AInfomorphPlayerController::PerformDodge()
 
 void AInfomorphPlayerController::PerformStealthMode()
 {
+	if(bIsPossessing)
+	{
+		return;
+	}
+
 	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
 	if(PossessedCharacter != nullptr)
 	{
@@ -166,16 +231,31 @@ void AInfomorphPlayerController::PerformStealthMode()
 
 void AInfomorphPlayerController::PerformInteraction()
 {
+	if(bIsPossessing)
+	{
+		return;
+	}
+
 	LogOnScreen("Interaction");
 }
 
 void AInfomorphPlayerController::PerformSpecialAbility()
 {
+	if(bIsPossessing)
+	{
+		return;
+	}
+
 	LogOnScreen("SpecialAbility");
 }
 
 void AInfomorphPlayerController::PerformSpecialPossessedCharacterAbility()
 {
+	if(bIsPossessing)
+	{
+		return;
+	}
+
 	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
 	if(PossessedCharacter != nullptr)
 	{
@@ -192,16 +272,48 @@ void AInfomorphPlayerController::PerformSpecialPossessedCharacterAbility()
 
 void AInfomorphPlayerController::PerformStartPossessing()
 {
-	LogOnScreen("StartPossessing");
+	if(bIsPossessing)
+	{
+		return;
+	}
+
+	AInfomorphUE4Character* CurrentlyPossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
+	if(CurrentlyPossessedCharacter != nullptr)
+	{
+		if(CurrentlyPossessedCharacter->IsCameraLocked())
+		{
+			CharacterToPossess = Cast<AInfomorphUE4Character>(CurrentlyPossessedCharacter->GetCameraTarget());
+			if(CharacterToPossess != nullptr)
+			{
+				PossessingTimer = 0.0f;
+				bIsPossessing = true;
+				SetViewTargetWithBlend(CharacterToPossess, PossessingTime, EViewTargetBlendFunction::VTBlend_Linear);
+			}
+		}
+	}
 }
 
 void AInfomorphPlayerController::PerformStopPossessing()
 {
-	LogOnScreen("StopPossessing");
+	if(bIsPossessing)
+	{
+		AInfomorphUE4Character* CurrentlyPossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
+		if(CurrentlyPossessedCharacter != nullptr)
+		{
+			SetViewTargetWithBlend(CurrentlyPossessedCharacter, PossessingTime - PossessingTimer, EViewTargetBlendFunction::VTBlend_Linear);
+		}
+		CharacterToPossess = nullptr;
+		bIsPossessing = false;
+	}
 }
 
 void AInfomorphPlayerController::PerformCameraLock()
 {
+	if(bIsPossessing)
+	{
+		return;
+	}
+
 	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
 	if(PossessedCharacter != nullptr)
 	{
@@ -219,6 +331,18 @@ void AInfomorphPlayerController::PerformCameraLock()
 			}
 		}
 	}
+}
+
+void AInfomorphPlayerController::PossessNewCharacter(AInfomorphUE4Character* NewCharacter)
+{
+	AInfomorphUE4Character* CurrentlyPossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
+	if(CurrentlyPossessedCharacter != nullptr)
+	{
+		CurrentlyPossessedCharacter->UnlockCamera();
+	}
+	UnPossess();
+	Possess(NewCharacter);
+	bIsPossessing = false;
 }
 
 AActor* AInfomorphPlayerController::GetActorInLookDirection(const FVector& EyesLocation, const FVector& Direction) const
@@ -271,11 +395,6 @@ AActor* AInfomorphPlayerController::GetActorInLookDirection(const FVector& EyesL
 		}
 	}
 
-	if(HitActor)
-	{
-		LogOnScreen(HitActor->GetName());
-	}
-
 	return HitActor;
 }
 
@@ -284,6 +403,9 @@ AInfomorphPlayerController::AInfomorphPlayerController() : Super()
 	BaseTurnRate = 45.0f;
 	BaseLookUpRate = 45.0f;
 	LookTimerThreshold = 0.75f;
+	PossessingTime = 1.0f;
+	PossessingTimer = 0.0f;
+	bIsPossessing = false;
 
 	AutoReceiveInput = EAutoReceiveInput::Player0;
 	PrimaryActorTick.bCanEverTick = true;
@@ -294,6 +416,9 @@ AInfomorphPlayerController::AInfomorphPlayerController(const FObjectInitializer&
 	BaseTurnRate = 45.0f;
 	BaseLookUpRate = 45.0f;
 	LookTimerThreshold = 0.75f;
+	PossessingTime = 1.0f;
+	PossessingTimer = 0.0f;
+	bIsPossessing = false;
 
 	AutoReceiveInput = EAutoReceiveInput::Player0;
 	PrimaryActorTick.bCanEverTick = true;
@@ -340,4 +465,14 @@ void AInfomorphPlayerController::Tick(float DeltaSeconds)
 
 	LastLookedTimer += DeltaSeconds;
 	LastMovedTimer += DeltaSeconds;
+
+	if(bIsPossessing)
+	{
+		PossessingTimer = FMath::Clamp(PossessingTimer + DeltaSeconds, 0.0f, PossessingTime);
+
+		if(PossessingTimer >= PossessingTime)
+		{
+			PossessNewCharacter(CharacterToPossess);
+		}
+	}
 }

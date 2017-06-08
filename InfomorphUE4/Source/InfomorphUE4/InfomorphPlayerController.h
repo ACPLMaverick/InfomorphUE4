@@ -21,9 +21,15 @@ protected:
 		float BaseLookUpRate;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
 		float LookTimerThreshold;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Possession)
+		float PossessingTime;
 
 	float LastLookedTimer;
 	float LastMovedTimer;
+
+	class AInfomorphUE4Character* CharacterToPossess;
+	float PossessingTimer;
+	bool bIsPossessing;
 	
 protected:
 	void MoveForward(float Value);
@@ -45,6 +51,8 @@ protected:
 	void PerformStartPossessing();
 	void PerformStopPossessing();
 	void PerformCameraLock();
+
+	void PossessNewCharacter(class AInfomorphUE4Character* NewCharacter);
 
 	AActor* GetActorInLookDirection(const FVector& EyesLocation, const FVector &Direction) const;
 

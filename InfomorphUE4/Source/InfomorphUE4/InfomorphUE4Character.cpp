@@ -39,7 +39,7 @@ void AInfomorphUE4Character::ProcessCameraLocked(float DeltaSeconds)
 
 		}
 	}
-	else
+	else if(Controller != nullptr)
 	{
 		Controller->SetControlRotation(FMath::RInterpTo(Controller->GetControlRotation(), LookRotation, DeltaSeconds, 7.0f));
 	}
@@ -67,12 +67,14 @@ AInfomorphUE4Character::AInfomorphUE4Character()
 	GetCharacterMovement()->AirControl = 0.2f;
 	GetCharacterMovement()->MaxWalkSpeed = 375.0f;
 	GetCharacterMovement()->MaxWalkSpeedCrouched = 100.0f;
+	GetCharacterMovement()->GetNavAgentPropertiesRef().bCanCrouch = true;
 
 	// Create a camera boom (pulls in towards the player if there is a collision)
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
 	CameraBoom->TargetArmLength = 300.0f; // The camera follows at this distance behind the character	
 	CameraBoom->bUsePawnControlRotation = true; // Rotate the arm based on the controller
+	CameraBoom->bEnableCameraLag = true;
 
 	// Create a follow camera
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
@@ -120,8 +122,10 @@ void AInfomorphUE4Character::EnterStealthMode()
 		return;
 	}
 
-	GetCharacterMovement()->Crouch();
+	Crouch();
 	bIsInStealthMode = true;
+
+	//TODO: Change movement speed
 }
 
 void AInfomorphUE4Character::ExitStealthMode()
@@ -131,8 +135,10 @@ void AInfomorphUE4Character::ExitStealthMode()
 		return;
 	}
 
-	GetCharacterMovement()->UnCrouch();
+	UnCrouch();
 	bIsInStealthMode = false;
+
+	//TODO: Change movement speed
 }
 
 void AInfomorphUE4Character::Attack()
@@ -172,6 +178,7 @@ bool AInfomorphUE4Character::LockCameraOnTarget(AActor* Target)
 void AInfomorphUE4Character::UnlockCamera()
 {
 	bIsCameraLocked = false;
+	CameraTarget = nullptr;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 }
 
