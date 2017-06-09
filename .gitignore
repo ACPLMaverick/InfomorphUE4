@@ -45,22 +45,22 @@
 *.VC.opendb
 
 # Precompiled Assets
-SourceArt/**/*.png
-SourceArt/**/*.tga
+InfomorphUE4/SourceArt/**/*.png
+InfomorphUE4/SourceArt/**/*.tga
 
 # Binary Files
-Binaries/*
+InfomorphUE4/Binaries/*
 
 # Builds
-Build/*
+InfomorphUE4/Build/*
 
 # Whitelist PakBlacklist-<BuildConfiguration>.txt files
-!Build/*/
-Build/*/**
-!Build/*/PakBlacklist*.txt
+!InfomorphUE4/Build/*/
+InfomorphUE4/Build/*/**
+!InfomorphUE4/Build/*/PakBlacklist*.txt
 
 # Don't ignore icon files in Build
-!Build/**/*.ico
+!InfomorphUE4/Build/**/*.ico
 
 # Built data for maps
 *_BuiltData.uasset
