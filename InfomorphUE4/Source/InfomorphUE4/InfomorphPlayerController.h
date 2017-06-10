@@ -4,6 +4,8 @@
 
 #include "Core.h"
 #include "GameFramework/PlayerController.h"
+#include "InfomorphSkillBase.h"
+#include "Runtime/Engine/Classes/Components/ForceFeedbackComponent.h"
 #include "InfomorphPlayerController.generated.h"
 
 /**
@@ -16,31 +18,23 @@ class INFOMORPHUE4_API AInfomorphPlayerController : public APlayerController
 	
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Feedback)
-		UForceFeedbackEffect* BuildUpVibrationEffect;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Feedback)
-		UForceFeedbackEffect* PossessingVibrationEffect;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Feedback)
-		class UForceFeedbackComponent* FeedbackComponent;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
+		UForceFeedbackComponent* FeedbackComponent;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
 		float BaseTurnRate;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
 		float BaseLookUpRate;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
 		float LookTimerThreshold;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Possession)
-		float PossessingTime;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Possession)
-		float BuildUpTime;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Skills)
+		TArray<FSkillInfo> Skills;
 
 	float LastLookedTimer;
 	float LastMovedTimer;
 
-	class AInfomorphUE4Character* CharacterToPossess;
-	float PossessingTimer;
-	float BuildUpTimer;
-	bool bIsPossessing;
+	float MovementMultiplier;
+	float LookMultiplier;
 
-	FTimerHandle BuildUpTimerHandle;
+	int32 CurrentSelectedSkillIndex;
 	
 protected:
 	void MoveForward(float Value);
@@ -59,15 +53,12 @@ protected:
 	void PerformInteraction();
 	void PerformSpecialAbility();
 	void PerformSpecialPossessedCharacterAbility();
-	void PerformStartPossessing();
-	void PerformStopPossessing();
 	void PerformCameraLock();
 	void PerformJump();
-	void PerformStartTelekinesis();
-	void PerformStopTelekinesis();
-
-	void PossessNewCharacter(class AInfomorphUE4Character* NewCharacter);
-	void OnBuildUpTimerCompleted();
+	void PerformStartSkillUsage();
+	void PerformStopSkillUsage();
+	void PerformSkillSelectUp();
+	void PerformSkillSelectDown();
 
 	AActor* GetActorInLookDirection(const FVector& EyesLocation, const FVector &Direction) const;
 
@@ -75,11 +66,61 @@ public:
 	AInfomorphPlayerController();
 	AInfomorphPlayerController(const FObjectInitializer& ObjectInitializer);
 
+	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
 	
 	virtual void Tick(float DeltaSeconds) override;
 
+	void PossessNewCharacter(class AInfomorphUE4Character* NewCharacter);
+
 	FORCEINLINE float GetLastLookedTimer() const { return LastLookedTimer; }
 	FORCEINLINE float GetLastMovedTimer() const { return LastMovedTimer; }
 	FORCEINLINE float GetLookTimerTreshold() const { return LookTimerThreshold; }
+
+	FORCEINLINE void SetMovementMultiplier(float Multiplier)
+	{
+		MovementMultiplier = FMath::Clamp(Multiplier, 0.0f, 2.0f);
+	}
+
+	FORCEINLINE void ResetMovementMultiplier()
+	{
+		MovementMultiplier = 1.0f;
+	}
+
+	FORCEINLINE float GetMovementMultiplier() const
+	{
+		return MovementMultiplier;
+	}
+
+	FORCEINLINE void SetLookMultiplier(float Multiplier)
+	{
+		LookMultiplier = FMath::Clamp(Multiplier, 0.0f, 2.0f);
+	}
+
+	FORCEINLINE void ResetLookMultiplier()
+	{
+		LookMultiplier = 1.0f;
+	}
+
+	FORCEINLINE float GetLookMultiplier() const
+	{
+		return LookMultiplier;
+	}
+
+	FORCEINLINE void PlayFeedback(UForceFeedbackEffect* FeedbackEffect)
+	{
+		FeedbackComponent->Stop();
+		FeedbackComponent->SetForceFeedbackEffect(FeedbackEffect);
+		FeedbackComponent->Play();
+	}
+
+	FORCEINLINE void StopFeedback()
+	{
+		FeedbackComponent->Stop();
+	}
+
+	FORCEINLINE bool IsUsingSkill() const
+	{
+		return Skills.IsValidIndex(CurrentSelectedSkillIndex) && Skills[CurrentSelectedSkillIndex].Skill != nullptr && Skills[CurrentSelectedSkillIndex].Skill->IsBeingUsed();
+	}
 };

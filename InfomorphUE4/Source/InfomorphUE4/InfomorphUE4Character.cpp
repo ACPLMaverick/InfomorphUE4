@@ -19,9 +19,10 @@ void AInfomorphUE4Character::ProcessCameraLocked(float DeltaSeconds)
 {
 	LockedCameraTimer = FMath::Clamp(LockedCameraTimer + DeltaSeconds, 0.0f, 1.0f);
 
-	FVector Direction = CameraTarget->GetActorLocation() - GetActorLocation();
+	FVector Direction = CameraTarget->GetActorLocation() - GetEyesLocation();
 	Direction.Normalize();
-	FRotator LookRotation = Direction.Rotation();
+	FRotator LookRotation = Controller->GetControlRotation();
+	LookRotation.Yaw = Direction.Rotation().Yaw;
 
 	AInfomorphPlayerController* InfomorphPC = Cast<AInfomorphPlayerController>(GetController());
 	if(InfomorphPC != nullptr)
@@ -48,7 +49,12 @@ void AInfomorphUE4Character::ProcessCameraLocked(float DeltaSeconds)
 
 
 	FRotator CharacterRotation = GetActorRotation();
-	CharacterRotation.Yaw = FMath::Lerp(CharacterRotation.Yaw, LookRotation.Yaw, LockedCameraTimer);
+	float TargetYaw = LookRotation.Yaw;
+	if(FMath::Abs(LookRotation.Yaw - CharacterRotation.Yaw) > 180.0f)
+	{
+		TargetYaw = CharacterRotation.Yaw + FMath::Sign(CharacterRotation.Yaw) * (180.0f - FMath::Abs(CharacterRotation.Yaw) + 180.0f - FMath::Abs(LookRotation.Yaw));
+	}
+	CharacterRotation.Yaw = FMath::Lerp(CharacterRotation.Yaw, TargetYaw, LockedCameraTimer);
 	SetActorRotation(CharacterRotation);
 }
 
@@ -82,9 +88,6 @@ AInfomorphUE4Character::AInfomorphUE4Character()
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
-
-	EyesArrow = CreateDefaultSubobject<UArrowComponent>(TEXT("EyesArrow"));
-	EyesArrow->SetupAttachment(FollowCamera);
 
 	bIsInStealthMode = false;
 
@@ -188,10 +191,10 @@ void AInfomorphUE4Character::UnlockCamera()
 
 FVector AInfomorphUE4Character::GetEyesLocation() const
 {
-	return EyesArrow != nullptr ? EyesArrow->GetComponentLocation() : GetActorLocation();
+	return FollowCamera != nullptr ? FollowCamera->GetComponentLocation() : GetActorLocation();
 }
 
 FVector AInfomorphUE4Character::GetEyesDirection() const
 {
-	return EyesArrow != nullptr ? EyesArrow->GetComponentRotation().Vector() : GetActorRotation().Vector();
+	return FollowCamera != nullptr ? FollowCamera->GetComponentRotation().Vector() : GetActorRotation().Vector();
 }

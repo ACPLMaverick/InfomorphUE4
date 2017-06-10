@@ -5,108 +5,74 @@
 #include "InfomorphUE4.h"
 #include "Runtime/Engine/Classes/Camera/CameraComponent.h"
 #include "Runtime/CoreUObject/Public/UObject/UObjectIterator.h"
-#include "Runtime/Engine/Public/TimerManager.h"
-#include "Runtime/Engine/Classes/Components/ForceFeedbackComponent.h"
 
 void AInfomorphPlayerController::MoveForward(float Value)
 {
-	if(bIsPossessing)
-	{
-		return;
-	}
-
 	ACharacter* PossessedCharacter = Cast<ACharacter>(GetPawn());
 	if(PossessedCharacter != nullptr && Value != 0.0f)
 	{
-		float BuildUpDecreaseInfluence = BuildUpTimer / (BuildUpTime * 0.8f);
 		const FRotator Rotation = GetControlRotation();
 		const FRotator YawRotation(0, Rotation.Yaw, 0);
 
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-		PossessedCharacter->AddMovementInput(Direction, Value * (1.0f - BuildUpDecreaseInfluence));
+		PossessedCharacter->AddMovementInput(Direction, Value * MovementMultiplier);
 		LastMovedTimer = 0.0f;
 	}
 }
 
 void AInfomorphPlayerController::MoveRight(float Value)
 {
-	if(bIsPossessing)
-	{
-		return;
-	}
-
 	ACharacter* PossessedCharacter = Cast<ACharacter>(GetPawn());
 	if(PossessedCharacter != nullptr && Value != 0.0f)
 	{
-		float BuildUpDecreaseInfluence = BuildUpTimer / (BuildUpTime * 0.8f);
 		const FRotator Rotation = GetControlRotation();
 		const FRotator YawRotation(0, Rotation.Yaw, 0);
 
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-		PossessedCharacter->AddMovementInput(Direction, Value * (1.0f - BuildUpDecreaseInfluence));
+		PossessedCharacter->AddMovementInput(Direction, Value * MovementMultiplier);
 		LastMovedTimer = 0.0f;
 	}
 }
 
 void AInfomorphPlayerController::Turn(float Value)
 {
-	if(bIsPossessing)
-	{
-		return;
-	}
-
 	if(Value != 0.0f)
 	{
 		LastLookedTimer = 0.0f;
-		AddYawInput(Value);
+		AddYawInput(Value * LookMultiplier);
 	}
 }
 
 void AInfomorphPlayerController::TurnAtRate(float Rate)
 {
-	if(bIsPossessing)
-	{
-		return;
-	}
-
 	if(Rate != 0.0f)
 	{
 		LastLookedTimer = 0.0f;
-		AddYawInput(Rate * BaseTurnRate * GetWorld()->GetDeltaSeconds());
+		AddYawInput(Rate * BaseTurnRate * GetWorld()->GetDeltaSeconds() * LookMultiplier);
 	}
 }
 
 void AInfomorphPlayerController::LookUp(float Value)
 {
-	if(bIsPossessing)
-	{
-		return;
-	}
-
 	if(Value != 0.0f)
 	{
 		LastLookedTimer = 0.0f;
-		AddPitchInput(Value);
+		AddPitchInput(Value * LookMultiplier);
 	}
 }
 
 void AInfomorphPlayerController::LookUpAtRate(float Rate)
 {
-	if(bIsPossessing)
-	{
-		return;
-	}
-
 	if(Rate != 0.0f)
 	{
 		LastLookedTimer = 0.0f;
-		AddPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
+		AddPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds() * LookMultiplier);
 	}
 }
 
 void AInfomorphPlayerController::PerformHeavyAttack()
 {
-	if(bIsPossessing)
+	if(IsUsingSkill())
 	{
 		return;
 	}
@@ -124,7 +90,7 @@ void AInfomorphPlayerController::PerformHeavyAttack()
 
 void AInfomorphPlayerController::PerformAttack()
 {
-	if(bIsPossessing)
+	if(IsUsingSkill())
 	{
 		return;
 	}
@@ -142,7 +108,7 @@ void AInfomorphPlayerController::PerformAttack()
 
 void AInfomorphPlayerController::PerformSpecialAttack()
 {
-	if(bIsPossessing)
+	if(IsUsingSkill())
 	{
 		return;
 	}
@@ -160,7 +126,7 @@ void AInfomorphPlayerController::PerformSpecialAttack()
 
 void AInfomorphPlayerController::PerformStartBlock()
 {
-	if(bIsPossessing)
+	if(IsUsingSkill())
 	{
 		return;
 	}
@@ -178,7 +144,7 @@ void AInfomorphPlayerController::PerformStartBlock()
 
 void AInfomorphPlayerController::PerformEndBlock()
 {
-	if(bIsPossessing)
+	if(IsUsingSkill())
 	{
 		return;
 	}
@@ -196,7 +162,7 @@ void AInfomorphPlayerController::PerformEndBlock()
 
 void AInfomorphPlayerController::PerformDodge()
 {
-	if(bIsPossessing)
+	if(IsUsingSkill())
 	{
 		return;
 	}
@@ -214,7 +180,7 @@ void AInfomorphPlayerController::PerformDodge()
 
 void AInfomorphPlayerController::PerformStealthMode()
 {
-	if(bIsPossessing)
+	if(IsUsingSkill())
 	{
 		return;
 	}
@@ -235,7 +201,7 @@ void AInfomorphPlayerController::PerformStealthMode()
 
 void AInfomorphPlayerController::PerformInteraction()
 {
-	if(bIsPossessing)
+	if(IsUsingSkill())
 	{
 		return;
 	}
@@ -245,7 +211,7 @@ void AInfomorphPlayerController::PerformInteraction()
 
 void AInfomorphPlayerController::PerformSpecialAbility()
 {
-	if(bIsPossessing)
+	if(IsUsingSkill())
 	{
 		return;
 	}
@@ -255,7 +221,7 @@ void AInfomorphPlayerController::PerformSpecialAbility()
 
 void AInfomorphPlayerController::PerformSpecialPossessedCharacterAbility()
 {
-	if(bIsPossessing)
+	if(IsUsingSkill())
 	{
 		return;
 	}
@@ -271,53 +237,9 @@ void AInfomorphPlayerController::PerformSpecialPossessedCharacterAbility()
 	}
 }
 
-void AInfomorphPlayerController::PerformStartPossessing()
-{
-	if(bIsPossessing)
-	{
-		return;
-	}
-
-	AInfomorphUE4Character* CurrentlyPossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
-	if(CurrentlyPossessedCharacter != nullptr)
-	{
-		if(CurrentlyPossessedCharacter->IsCameraLocked())
-		{
-			CharacterToPossess = Cast<AInfomorphUE4Character>(CurrentlyPossessedCharacter->GetCameraTarget());
-			if(CharacterToPossess != nullptr)
-			{
-				FeedbackComponent->Stop();
-				FeedbackComponent->SetForceFeedbackEffect(BuildUpVibrationEffect);
-				FeedbackComponent->Play();
-				GetWorldTimerManager().SetTimer(BuildUpTimerHandle, this, &AInfomorphPlayerController::OnBuildUpTimerCompleted, BuildUpTime);
-			}
-		}
-	}
-}
-
-void AInfomorphPlayerController::PerformStopPossessing()
-{
-	if(BuildUpTimerHandle.IsValid())
-	{
-		GetWorldTimerManager().ClearTimer(BuildUpTimerHandle);
-	}
-
-	if(bIsPossessing)
-	{
-		FeedbackComponent->Stop();
-		AInfomorphUE4Character* CurrentlyPossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
-		if(CurrentlyPossessedCharacter != nullptr)
-		{
-			SetViewTargetWithBlend(CurrentlyPossessedCharacter, PossessingTime - PossessingTimer, EViewTargetBlendFunction::VTBlend_Linear);
-		}
-		CharacterToPossess = nullptr;
-		bIsPossessing = false;
-	}
-}
-
 void AInfomorphPlayerController::PerformCameraLock()
 {
-	if(bIsPossessing)
+	if(IsUsingSkill())
 	{
 		return;
 	}
@@ -343,7 +265,7 @@ void AInfomorphPlayerController::PerformCameraLock()
 
 void AInfomorphPlayerController::PerformJump()
 {
-	if(bIsPossessing)
+	if(IsUsingSkill())
 	{
 		return;
 	}
@@ -359,24 +281,42 @@ void AInfomorphPlayerController::PerformJump()
 	}
 }
 
-void AInfomorphPlayerController::PerformStartTelekinesis()
+void AInfomorphPlayerController::PerformStartSkillUsage()
 {
-	if(bIsPossessing)
+	if(!Skills.IsValidIndex(CurrentSelectedSkillIndex) || Skills[CurrentSelectedSkillIndex].Skill == nullptr)
 	{
 		return;
 	}
 
-	LogOnScreen("Telekinesis start");
+	Skills[CurrentSelectedSkillIndex].Skill->StartUsing(this);
 }
 
-void AInfomorphPlayerController::PerformStopTelekinesis()
+void AInfomorphPlayerController::PerformStopSkillUsage()
 {
-	if(bIsPossessing)
+	if(!Skills.IsValidIndex(CurrentSelectedSkillIndex) || Skills[CurrentSelectedSkillIndex].Skill == nullptr)
 	{
 		return;
 	}
 
-	LogOnScreen("Telekinesis stop");
+	Skills[CurrentSelectedSkillIndex].Skill->StopUsing();
+}
+
+void AInfomorphPlayerController::PerformSkillSelectUp()
+{
+	if(IsUsingSkill())
+	{
+		Skills[CurrentSelectedSkillIndex].Skill->StopUsing();
+	}
+	CurrentSelectedSkillIndex = (CurrentSelectedSkillIndex + 1) % Skills.Num();
+}
+
+void AInfomorphPlayerController::PerformSkillSelectDown()
+{
+	if(IsUsingSkill())
+	{
+		Skills[CurrentSelectedSkillIndex].Skill->StopUsing();
+	}
+	CurrentSelectedSkillIndex = (CurrentSelectedSkillIndex - 1) % Skills.Num();
 }
 
 void AInfomorphPlayerController::PossessNewCharacter(AInfomorphUE4Character* NewCharacter)
@@ -388,20 +328,6 @@ void AInfomorphPlayerController::PossessNewCharacter(AInfomorphUE4Character* New
 	}
 	UnPossess();
 	Possess(NewCharacter);
-	bIsPossessing = false;
-}
-
-void AInfomorphPlayerController::OnBuildUpTimerCompleted()
-{
-	if(CharacterToPossess != nullptr)
-	{
-		FeedbackComponent->Stop();
-		FeedbackComponent->SetForceFeedbackEffect(PossessingVibrationEffect);
-		FeedbackComponent->Play();
-		PossessingTimer = 0.0f;
-		bIsPossessing = true;
-		SetViewTargetWithBlend(CharacterToPossess, PossessingTime, EViewTargetBlendFunction::VTBlend_Linear);
-	}
 }
 
 AActor* AInfomorphPlayerController::GetActorInLookDirection(const FVector& EyesLocation, const FVector& Direction) const
@@ -462,11 +388,9 @@ AInfomorphPlayerController::AInfomorphPlayerController() : Super()
 	BaseTurnRate = 45.0f;
 	BaseLookUpRate = 45.0f;
 	LookTimerThreshold = 0.75f;
-	PossessingTime = 1.0f;
-	BuildUpTime = 0.25f;
 
-	PossessingTimer = 0.0f;
-	bIsPossessing = false;
+	MovementMultiplier = 1.0f;
+	LookMultiplier = 1.0f;
 
 	AutoReceiveInput = EAutoReceiveInput::Player0;
 	PrimaryActorTick.bCanEverTick = true;
@@ -477,17 +401,28 @@ AInfomorphPlayerController::AInfomorphPlayerController(const FObjectInitializer&
 	BaseTurnRate = 45.0f;
 	BaseLookUpRate = 45.0f;
 	LookTimerThreshold = 0.75f;
-	PossessingTime = 1.0f;
-	BuildUpTime = 0.25f;
 
-	PossessingTimer = 0.0f;
-	bIsPossessing = false;
+	MovementMultiplier = 1.0f;
+	LookMultiplier = 1.0f;
 
 	AutoReceiveInput = EAutoReceiveInput::Player0;
 	PrimaryActorTick.bCanEverTick = true;
 
 	InputComponent = CreateDefaultSubobject<UInputComponent>("InputComponent");
 	FeedbackComponent = CreateDefaultSubobject<UForceFeedbackComponent>("FeedbackComponent");
+}
+
+void AInfomorphPlayerController::BeginPlay()
+{
+	CurrentSelectedSkillIndex = 0;
+	int32 SkillsNum = Skills.Num();
+	for(int32 i = 0; i < SkillsNum; ++i)
+	{
+		Skills[i].Initialize();
+	}
+
+	MovementMultiplier = 1.0f;
+	LookMultiplier = 1.0f;
 }
 
 void AInfomorphPlayerController::SetupInputComponent()
@@ -518,11 +453,11 @@ void AInfomorphPlayerController::SetupInputComponent()
 	InputComponent->BindAction("Block", EInputEvent::IE_Released, this, &AInfomorphPlayerController::PerformEndBlock);
 	InputComponent->BindAction("Dodge", EInputEvent::IE_Pressed, this, &AInfomorphPlayerController::PerformDodge);
 
-	//Possession and interaction
-	InputComponent->BindAction("Possess", EInputEvent::IE_Pressed, this, &AInfomorphPlayerController::PerformStartPossessing);
-	InputComponent->BindAction("Possess", EInputEvent::IE_Released, this, &AInfomorphPlayerController::PerformStopPossessing);
-	InputComponent->BindAction("Telekinesis", EInputEvent::IE_Pressed, this, &AInfomorphPlayerController::PerformStartTelekinesis);
-	InputComponent->BindAction("Telekinesis", EInputEvent::IE_Released, this, &AInfomorphPlayerController::PerformStopTelekinesis);
+	//Skills and interaction
+	InputComponent->BindAction("SkillUse", EInputEvent::IE_Pressed, this, &AInfomorphPlayerController::PerformStartSkillUsage);
+	InputComponent->BindAction("SkillUse", EInputEvent::IE_Released, this, &AInfomorphPlayerController::PerformStopSkillUsage);
+	InputComponent->BindAction("SkillSelectUp", EInputEvent::IE_Pressed, this, &AInfomorphPlayerController::PerformSkillSelectUp);
+	InputComponent->BindAction("SkillSelectDown", EInputEvent::IE_Pressed, this, &AInfomorphPlayerController::PerformSkillSelectDown);
 	InputComponent->BindAction("Interaction", EInputEvent::IE_Pressed, this, &AInfomorphPlayerController::PerformInteraction);
 }
 
@@ -533,22 +468,9 @@ void AInfomorphPlayerController::Tick(float DeltaSeconds)
 	LastLookedTimer += DeltaSeconds;
 	LastMovedTimer += DeltaSeconds;
 
-	if(bIsPossessing)
+	LogOnScreen(1, FColor::Yellow, Skills[CurrentSelectedSkillIndex].SkillName.ToString());
+	if(IsUsingSkill())
 	{
-		PossessingTimer = FMath::Clamp(PossessingTimer + DeltaSeconds, 0.0f, PossessingTime);
-
-		if(PossessingTimer >= PossessingTime)
-		{
-			PossessNewCharacter(CharacterToPossess);
-		}
-	}
-
-	if(BuildUpTimerHandle.IsValid())
-	{
-		BuildUpTimer += DeltaSeconds;
-	}
-	else
-	{
-		BuildUpTimer = 0.0f;
+		Skills[CurrentSelectedSkillIndex].Skill->Tick(DeltaSeconds);
 	}
 }
