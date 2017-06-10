@@ -3,6 +3,7 @@
 #include "InfomorphUE4Character.h"
 #include "InfomorphUE4.h"
 #include "InfomorphPlayerController.h"
+#include "InfomorphBaseAIController.h"
 #include "Kismet/HeadMountedDisplayFunctionLibrary.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -58,6 +59,11 @@ void AInfomorphUE4Character::ProcessCameraLocked(float DeltaSeconds)
 	SetActorRotation(CharacterRotation);
 }
 
+void AInfomorphUE4Character::ConfusionEnd()
+{
+	bIsConfused = false;
+}
+
 AInfomorphUE4Character::AInfomorphUE4Character()
 {
 	// Set size for collision capsule
@@ -94,6 +100,21 @@ AInfomorphUE4Character::AInfomorphUE4Character()
 	CameraTarget = nullptr;
 	LockedCameraTimer = 0.0f;
 	bIsCameraLocked = false;
+
+	ConfusionPossessedTime = 1.0f;
+	ConfusionUnPossessedTime = 1.5f;
+	bIsConfused = false;
+
+	BaseConsciousness = 80.0f;
+	BaseEnergy = 100.0f;
+}
+
+void AInfomorphUE4Character::BeginPlay()
+{
+	Super::BeginPlay();
+
+	CurrentConsciousness = BaseConsciousness;
+	CurrentEnergy = BaseEnergy;
 }
 
 void AInfomorphUE4Character::Tick(float DeltaSeconds)
@@ -103,6 +124,33 @@ void AInfomorphUE4Character::Tick(float DeltaSeconds)
 	if(bIsCameraLocked && CameraTarget != nullptr)
 	{
 		ProcessCameraLocked(DeltaSeconds);
+	}
+}
+
+void AInfomorphUE4Character::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	if(NewController == nullptr)
+	{
+		return;
+	}
+
+	AInfomorphPlayerController* InfomorphPC = Cast<AInfomorphPlayerController>(NewController);
+	if(InfomorphPC != nullptr)
+	{
+		bIsConfused = true;
+		GetWorldTimerManager().SetTimer(ConfusionTimerHandle, this, &AInfomorphUE4Character::ConfusionEnd, ConfusionPossessedTime);
+	}
+	else
+	{
+		//Check if this is an AI controller
+		AInfomorphBaseAIController* AIController = Cast<AInfomorphBaseAIController>(NewController);
+		if(AIController != nullptr)
+		{
+			bIsConfused = true;
+			GetWorldTimerManager().SetTimer(ConfusionTimerHandle, this, &AInfomorphUE4Character::ConfusionEnd, ConfusionUnPossessedTime);
+		}
 	}
 }
 
@@ -149,7 +197,13 @@ void AInfomorphUE4Character::ExitStealthMode()
 
 void AInfomorphUE4Character::Attack()
 {
-
+	LogOnScreen(FString("TEMPORARY ATTACK!"));
+	
+	AInfomorphUE4Character* Target = Cast<AInfomorphUE4Character>(CameraTarget);
+	if(Target != nullptr)
+	{
+		Target->CurrentConsciousness -= 15.0f;
+	}
 }
 
 void AInfomorphUE4Character::HeavyAttack()
@@ -187,6 +241,34 @@ void AInfomorphUE4Character::UnlockCamera()
 	bIsCameraLocked = false;
 	CameraTarget = nullptr;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
+}
+
+float AInfomorphUE4Character::GetPossessionChance(const FVector& PlayerLocation)
+{
+	AInfomorphBaseAIController* InfomorphAIController = Cast<AInfomorphBaseAIController>(GetController());
+	if(InfomorphAIController != nullptr && !InfomorphAIController->IsPlayerNoticed())
+	{
+		return 1.0f;
+	}
+
+	float ConsciousnessPercentage = CurrentConsciousness / BaseConsciousness;
+	if(ConsciousnessPercentage <= 0.25f)
+	{
+		return 1.0f;
+	}
+
+	FVector ActorForward = GetActorForwardVector();
+	FVector ActorToPlayer = PlayerLocation - GetActorLocation();
+	ActorToPlayer.Normalize();
+	float DotProduct = FVector::DotProduct(ActorForward, ActorToPlayer);
+	if(DotProduct > 0.5f)
+	{
+		return 0.0f;
+	}
+
+	float PercentageInversed = 1.0f - ConsciousnessPercentage;
+	float Chance = FMath::Clamp((-2.0f * DotProduct + 1.0f) / 3.0f, 0.0f, 1.0f);
+	return Chance * PercentageInversed;
 }
 
 FVector AInfomorphUE4Character::GetEyesLocation() const

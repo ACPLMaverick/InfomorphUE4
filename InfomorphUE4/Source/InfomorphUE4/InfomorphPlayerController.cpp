@@ -8,8 +8,8 @@
 
 void AInfomorphPlayerController::MoveForward(float Value)
 {
-	ACharacter* PossessedCharacter = Cast<ACharacter>(GetPawn());
-	if(PossessedCharacter != nullptr && Value != 0.0f)
+	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
+	if(PossessedCharacter != nullptr && !PossessedCharacter->IsConfused() && Value != 0.0f)
 	{
 		const FRotator Rotation = GetControlRotation();
 		const FRotator YawRotation(0, Rotation.Yaw, 0);
@@ -22,8 +22,8 @@ void AInfomorphPlayerController::MoveForward(float Value)
 
 void AInfomorphPlayerController::MoveRight(float Value)
 {
-	ACharacter* PossessedCharacter = Cast<ACharacter>(GetPawn());
-	if(PossessedCharacter != nullptr && Value != 0.0f)
+	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
+	if(PossessedCharacter != nullptr && !PossessedCharacter->IsConfused() && Value != 0.0f)
 	{
 		const FRotator Rotation = GetControlRotation();
 		const FRotator YawRotation(0, Rotation.Yaw, 0);
@@ -78,7 +78,7 @@ void AInfomorphPlayerController::PerformHeavyAttack()
 	}
 
 	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
-	if(PossessedCharacter != nullptr)
+	if(PossessedCharacter != nullptr && !PossessedCharacter->IsConfused())
 	{
 		if(PossessedCharacter->IsInStealthMode())
 		{
@@ -96,7 +96,7 @@ void AInfomorphPlayerController::PerformAttack()
 	}
 
 	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
-	if(PossessedCharacter != nullptr)
+	if(PossessedCharacter != nullptr && !PossessedCharacter->IsConfused())
 	{
 		if(PossessedCharacter->IsInStealthMode())
 		{
@@ -114,7 +114,7 @@ void AInfomorphPlayerController::PerformSpecialAttack()
 	}
 
 	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
-	if(PossessedCharacter != nullptr)
+	if(PossessedCharacter != nullptr && !PossessedCharacter->IsConfused())
 	{
 		if(PossessedCharacter->IsInStealthMode())
 		{
@@ -132,7 +132,7 @@ void AInfomorphPlayerController::PerformStartBlock()
 	}
 
 	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
-	if(PossessedCharacter != nullptr)
+	if(PossessedCharacter != nullptr && !PossessedCharacter->IsConfused())
 	{
 		if(PossessedCharacter->IsInStealthMode())
 		{
@@ -150,7 +150,7 @@ void AInfomorphPlayerController::PerformEndBlock()
 	}
 
 	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
-	if(PossessedCharacter != nullptr)
+	if(PossessedCharacter != nullptr && !PossessedCharacter->IsConfused())
 	{
 		if(PossessedCharacter->IsInStealthMode())
 		{
@@ -168,7 +168,7 @@ void AInfomorphPlayerController::PerformDodge()
 	}
 
 	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
-	if(PossessedCharacter != nullptr)
+	if(PossessedCharacter != nullptr && !PossessedCharacter->IsConfused())
 	{
 		if(PossessedCharacter->IsInStealthMode())
 		{
@@ -186,7 +186,7 @@ void AInfomorphPlayerController::PerformStealthMode()
 	}
 
 	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
-	if(PossessedCharacter != nullptr)
+	if(PossessedCharacter != nullptr && !PossessedCharacter->IsConfused())
 	{
 		if(PossessedCharacter->IsInStealthMode())
 		{
@@ -227,7 +227,7 @@ void AInfomorphPlayerController::PerformSpecialPossessedCharacterAbility()
 	}
 
 	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
-	if(PossessedCharacter != nullptr)
+	if(PossessedCharacter != nullptr && !PossessedCharacter->IsConfused())
 	{
 		if(PossessedCharacter->IsInStealthMode())
 		{
@@ -271,7 +271,7 @@ void AInfomorphPlayerController::PerformJump()
 	}
 
 	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
-	if(PossessedCharacter != nullptr)
+	if(PossessedCharacter != nullptr && !PossessedCharacter->IsConfused())
 	{
 		if(PossessedCharacter->IsInStealthMode())
 		{
@@ -283,6 +283,12 @@ void AInfomorphPlayerController::PerformJump()
 
 void AInfomorphPlayerController::PerformStartSkillUsage()
 {
+	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
+	if(PossessedCharacter->IsConfused())
+	{
+		return;
+	}
+
 	if(!Skills.IsValidIndex(CurrentSelectedSkillIndex) || Skills[CurrentSelectedSkillIndex].Skill == nullptr)
 	{
 		return;
@@ -326,8 +332,8 @@ void AInfomorphPlayerController::PossessNewCharacter(AInfomorphUE4Character* New
 	{
 		CurrentlyPossessedCharacter->UnlockCamera();
 	}
-	UnPossess();
 	Possess(NewCharacter);
+	CurrentlyPossessedCharacter->SpawnDefaultController();
 }
 
 AActor* AInfomorphPlayerController::GetActorInLookDirection(const FVector& EyesLocation, const FVector& Direction) const
