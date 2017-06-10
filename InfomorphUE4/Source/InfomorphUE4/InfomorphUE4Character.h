@@ -14,8 +14,9 @@ class AInfomorphUE4Character : public ACharacter
 protected:
 	bool bIsInStealthMode;
 
-	bool bIsCameraLocked;
 	AActor* CameraTarget;
+	float LockedCameraTimer;
+	bool bIsCameraLocked;
 
 	/** Camera boom positioning the camera behind the character */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))

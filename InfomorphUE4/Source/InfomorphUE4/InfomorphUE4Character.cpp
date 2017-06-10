@@ -17,6 +17,8 @@
 
 void AInfomorphUE4Character::ProcessCameraLocked(float DeltaSeconds)
 {
+	LockedCameraTimer = FMath::Clamp(LockedCameraTimer + DeltaSeconds, 0.0f, 1.0f);
+
 	FVector Direction = CameraTarget->GetActorLocation() - GetActorLocation();
 	Direction.Normalize();
 	FRotator LookRotation = Direction.Rotation();
@@ -46,7 +48,7 @@ void AInfomorphUE4Character::ProcessCameraLocked(float DeltaSeconds)
 
 
 	FRotator CharacterRotation = GetActorRotation();
-	CharacterRotation.Yaw = FMath::FInterpTo(CharacterRotation.Yaw, LookRotation.Yaw, DeltaSeconds, 5.0f);
+	CharacterRotation.Yaw = FMath::Lerp(CharacterRotation.Yaw, LookRotation.Yaw, LockedCameraTimer);
 	SetActorRotation(CharacterRotation);
 }
 
@@ -87,6 +89,7 @@ AInfomorphUE4Character::AInfomorphUE4Character()
 	bIsInStealthMode = false;
 
 	CameraTarget = nullptr;
+	LockedCameraTimer = 0.0f;
 	bIsCameraLocked = false;
 }
 
@@ -171,6 +174,7 @@ bool AInfomorphUE4Character::LockCameraOnTarget(AActor* Target)
 	}
 
 	bIsCameraLocked = true;
+	LockedCameraTimer = 0.0f;
 	GetCharacterMovement()->bOrientRotationToMovement = false;
 	return true;
 }

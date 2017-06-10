@@ -15,6 +15,12 @@ class INFOMORPHUE4_API AInfomorphPlayerController : public APlayerController
 	GENERATED_BODY()
 	
 protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Feedback)
+		UForceFeedbackEffect* BuildUpVibrationEffect;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Feedback)
+		UForceFeedbackEffect* PossessingVibrationEffect;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Feedback)
+		class UForceFeedbackComponent* FeedbackComponent;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
 		float BaseTurnRate;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
@@ -23,13 +29,18 @@ protected:
 		float LookTimerThreshold;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Possession)
 		float PossessingTime;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Possession)
+		float BuildUpTime;
 
 	float LastLookedTimer;
 	float LastMovedTimer;
 
 	class AInfomorphUE4Character* CharacterToPossess;
 	float PossessingTimer;
+	float BuildUpTimer;
 	bool bIsPossessing;
+
+	FTimerHandle BuildUpTimerHandle;
 	
 protected:
 	void MoveForward(float Value);
@@ -51,8 +62,12 @@ protected:
 	void PerformStartPossessing();
 	void PerformStopPossessing();
 	void PerformCameraLock();
+	void PerformJump();
+	void PerformStartTelekinesis();
+	void PerformStopTelekinesis();
 
 	void PossessNewCharacter(class AInfomorphUE4Character* NewCharacter);
+	void OnBuildUpTimerCompleted();
 
 	AActor* GetActorInLookDirection(const FVector& EyesLocation, const FVector &Direction) const;
 
