@@ -19,6 +19,8 @@ public:
 	UPROPERTY(EditAnywhere, Category = Stats)
 		float EnergyRecoveryPerSecond;
 	UPROPERTY(EditAnywhere, Category = Stats)
+		float EnergyRestoreCooldown;
+	UPROPERTY(EditAnywhere, Category = Stats)
 		float ConsciousnessArmorWhenPossessed;
 	UPROPERTY(EditAnywhere, Category = Confusion)
 		float ConfusionPossessedTime;
@@ -46,6 +48,8 @@ public:
 		float HeavyAttackDamage;
 	UPROPERTY(EditAnywhere, Category = Damage)
 		float SpecialAttackDamage;
+	UPROPERTY(EditAnywhere, Category = Cooldowns)
+		float SpecialAttackCooldown;
 
 	float CurrentConsciousness;
 	float CurrentEnergy;
@@ -82,6 +86,8 @@ protected:
 	FTimerHandle ConfusionTimerHandle;
 
 	float LastTimeTargetSeen;
+	float LastActionTime;
+	float LastSpecialAttackTime;
 
 	bool bIsLightAttack;
 	bool bIsHeavyAttack;
@@ -154,7 +160,7 @@ public:
 
 	FORCEINLINE bool IsActionsDisabled() const
 	{
-		return bIsLightAttack || bIsHeavyAttack || bIsDodging || bIsSpecialAttack || bWasHit || CharacterStats.bIsConfused;
+		return bIsLightAttack || bIsHeavyAttack || bIsDodging || bIsSpecialAttack || bWasHit || CharacterStats.bIsConfused || IsDead();
 	}
 
 	UFUNCTION(BlueprintCallable, Category = Attack) 
