@@ -12,20 +12,40 @@ struct FCharacterStats
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = Stats)
 		float BaseConsciousness;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = Stats)
 		float BaseEnergy;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = Stats)
+		float EnergyRecoveryPerSecond;
+	UPROPERTY(EditAnywhere, Category = Stats)
+		float ConsciousnessArmorWhenPossessed;
+	UPROPERTY(EditAnywhere, Category = Confusion)
 		float ConfusionPossessedTime;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = Confusion)
 		float ConfusionUnpossessedTime;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = Senses)
 		float SightRange;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = Senses)
 		float HearRange;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = Senses)
 		float LooseTargetTimeout;
+	UPROPERTY(EditAnywhere, Category = Costs)
+		float LightAttackEnergyCost;
+	UPROPERTY(EditAnywhere, Category = Costs)
+		float HeavyAttackEnergyCost;
+	UPROPERTY(EditAnywhere, Category = Costs)
+		float SpecialAttackEnergyCost;
+	UPROPERTY(EditAnywhere, Category = Costs)
+		float DodgeEnergyCost;
+	UPROPERTY(EditAnywhere, Category = Costs)
+		float BlockEnergyCost;
+	UPROPERTY(EditAnywhere, Category = Damage)
+		float LightAttackDamage;
+	UPROPERTY(EditAnywhere, Category = Damage)
+		float HeavyAttackDamage;
+	UPROPERTY(EditAnywhere, Category = Damage)
+		float SpecialAttackDamage;
 
 	float CurrentConsciousness;
 	float CurrentEnergy;
@@ -63,6 +83,13 @@ protected:
 
 	float LastTimeTargetSeen;
 
+	bool bIsLightAttack;
+	bool bIsHeavyAttack;
+	bool bIsSpecialAttack;
+	bool bIsDodging;
+	bool bWasHit;
+	bool bIsBlocking;
+
 protected:
 	void ProcessCameraLocked(float DeltaSeconds);
 	void ConfusionEnd();
@@ -75,6 +102,7 @@ public:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void PossessedBy(AController* NewController) override;
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
 	virtual void StartBlock();
 	virtual void EndBlock();
@@ -91,6 +119,15 @@ public:
 	float GetPossessionChance(const FVector& PlayerLocation);
 	void Confuse(float ConfusionTime, float Multiplier = 1.0f);
 
+	UFUNCTION(BlueprintCallable, Category = Attack)
+		void EnableWeaponCollision();
+	UFUNCTION(BlueprintCallable, Category = Attack)
+		void DisableWeaponCollision();
+	UFUNCTION(BlueprintCallable, Category = Attack)
+		void EnableFootCollision();
+	UFUNCTION(BlueprintCallable, Category = Attack)
+		void DisableFootCollision();
+
 	UFUNCTION(BlueprintCallable, Category = Movement)
 		FORCEINLINE bool IsInStealthMode() const { return bIsInStealthMode; }
 
@@ -99,6 +136,52 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = Possession)
 		FORCEINLINE bool IsConfused() const { return CharacterStats.bIsConfused; }
+
+	UFUNCTION(BlueprintCallable, Category = Attack)
+		FORCEINLINE bool IsLightAttack() const { return bIsLightAttack; }
+	UFUNCTION(BlueprintCallable, Category = Attack)
+		FORCEINLINE bool IsHeavyAttack() const { return bIsHeavyAttack; }
+	UFUNCTION(BlueprintCallable, Category = Attack)
+		FORCEINLINE bool IsSpecialAttack() const { return bIsSpecialAttack; }
+	UFUNCTION(BlueprintCallable, Category = Damage)
+		FORCEINLINE bool WasHit() const { return bWasHit; }
+	UFUNCTION(BlueprintCallable, Category = Dodge)
+		FORCEINLINE bool IsDodging() const { return bIsDodging; }
+	UFUNCTION(BlueprintCallable, Category = Block)
+		FORCEINLINE bool IsBlocking() const { return bIsBlocking; }
+	UFUNCTION(BlueprintCallable, Category = Info)
+		FORCEINLINE bool IsDead() const { return CharacterStats.CurrentConsciousness <= 0.0f; }
+
+	FORCEINLINE bool IsActionsDisabled() const
+	{
+		return bIsLightAttack || bIsHeavyAttack || bIsDodging || bIsSpecialAttack || bWasHit || CharacterStats.bIsConfused;
+	}
+
+	UFUNCTION(BlueprintCallable, Category = Attack) 
+		void ResetAttacks()
+	{
+		bIsLightAttack = false;
+		bIsHeavyAttack = false;
+		bIsSpecialAttack = false;
+	}
+
+	UFUNCTION(BlueprintCallable, Category = Damage) 
+		void ResetHit()
+	{
+		bWasHit = false;
+	}
+
+	UFUNCTION(BlueprintCallable, Category = Dodge) 
+		void ResetDodging()
+	{
+		bIsDodging = false;
+	}
+
+	UFUNCTION(BlueprintCallable, Category = Block)
+		void ResetBlocking()
+	{
+		bIsBlocking = false;
+	}
 
 	UFUNCTION(BlueprintCallable, Category = Camera)
 		FVector GetEyesLocation() const;

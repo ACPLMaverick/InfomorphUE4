@@ -17,11 +17,25 @@ FCharacterStats::FCharacterStats()
 {
 	BaseConsciousness = 80.0f;
 	BaseEnergy = 100.0f;
+	EnergyRecoveryPerSecond = 1.0f;
+	ConsciousnessArmorWhenPossessed = 0.3f;
+
 	ConfusionPossessedTime = 2.0f;
 	ConfusionUnpossessedTime = 3.0f;
+	
 	SightRange = 1000.0f;
 	HearRange = 750.0f;
 	LooseTargetTimeout = 2.0f;
+
+	LightAttackEnergyCost = 28.0f;
+	HeavyAttackEnergyCost = 40.0f;
+	SpecialAttackEnergyCost = 80.0f;
+	DodgeEnergyCost = 40.0f;
+	BlockEnergyCost = 1.0f;	//Will be multiplied by Damage caused by attack
+
+	LightAttackDamage = 15.0f;
+	HeavyAttackDamage = 40.0f;
+	SpecialAttackDamage = 40.0f;
 }
 
 void FCharacterStats::Initialize()
@@ -160,6 +174,12 @@ AInfomorphUE4Character::AInfomorphUE4Character()
 	CameraTarget = nullptr;
 	LockedCameraTimer = 0.0f;
 	bIsCameraLocked = false;
+
+	bIsLightAttack = false;
+	bIsHeavyAttack = false;
+	bIsSpecialAttack = false;
+	bIsDodging = false;
+	bWasHit = false;
 }
 
 void AInfomorphUE4Character::BeginPlay()
@@ -172,6 +192,13 @@ void AInfomorphUE4Character::BeginPlay()
 void AInfomorphUE4Character::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+
+	CharacterStats.CurrentEnergy = FMath::Clamp(CharacterStats.CurrentEnergy + CharacterStats.EnergyRecoveryPerSecond * DeltaSeconds, 0.0f, CharacterStats.BaseEnergy);
+
+	if(Controller != nullptr && Controller->IsA<AInfomorphPlayerController>())
+	{
+		LogOnScreen(12345, FColor::Green, FString::Printf(TEXT("Consciousness: %.3f, Energy: %.3f"), CharacterStats.CurrentConsciousness, CharacterStats.CurrentEnergy));
+	}
 
 	if(bIsCameraLocked && CameraTarget != nullptr)
 	{
@@ -204,19 +231,53 @@ void AInfomorphUE4Character::PossessedBy(AController* NewController)
 	}
 }
 
+float AInfomorphUE4Character::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	if(ActualDamage <= 0.0f)
+	{
+		return 0.0f;
+	}
+
+	float EnergyLost = ActualDamage * 0.25f;
+	if(bIsBlocking)
+	{
+		EnergyLost = CharacterStats.BlockEnergyCost * ActualDamage;
+		ActualDamage = 0.0f;
+		if(EnergyLost > CharacterStats.CurrentEnergy)
+		{
+			ActualDamage = EnergyLost - CharacterStats.CurrentEnergy;
+			EnergyLost = CharacterStats.CurrentEnergy;
+			EndBlock();
+		}
+	}
+
+	CharacterStats.CurrentEnergy = FMath::Clamp(CharacterStats.CurrentEnergy - EnergyLost, 0.0f, CharacterStats.BaseEnergy);
+	CharacterStats.CurrentConsciousness = FMath::Clamp(CharacterStats.CurrentConsciousness - ActualDamage, 0.0f, CharacterStats.BaseConsciousness);
+	bWasHit = ActualDamage > 0.0f;
+
+	return ActualDamage;
+}
+
 void AInfomorphUE4Character::StartBlock()
 {
-
+	bIsBlocking = true;
 }
 
 void AInfomorphUE4Character::EndBlock()
 {
-
+	bIsBlocking = false;
 }
 
 void AInfomorphUE4Character::Dodge()
 {
-
+	if(CharacterStats.CurrentEnergy - CharacterStats.DodgeEnergyCost < 0.0f)
+	{
+		return;
+	}
+	CharacterStats.CurrentEnergy -= CharacterStats.DodgeEnergyCost;
+	bIsDodging = true;
 }
 
 void AInfomorphUE4Character::EnterStealthMode()
@@ -228,8 +289,6 @@ void AInfomorphUE4Character::EnterStealthMode()
 
 	Crouch();
 	bIsInStealthMode = true;
-
-	//TODO: Change movement speed
 }
 
 void AInfomorphUE4Character::ExitStealthMode()
@@ -241,29 +300,42 @@ void AInfomorphUE4Character::ExitStealthMode()
 
 	UnCrouch();
 	bIsInStealthMode = false;
-
-	//TODO: Change movement speed
 }
 
 void AInfomorphUE4Character::Attack()
 {
-	LogOnScreen(FString("TEMPORARY ATTACK!"));
-	
-	AInfomorphUE4Character* Target = Cast<AInfomorphUE4Character>(CameraTarget);
-	if(Target != nullptr)
+	if(CharacterStats.CurrentEnergy - CharacterStats.LightAttackEnergyCost < 0.0f)
 	{
-		Target->CharacterStats.CurrentConsciousness -= 15.0f;
+		return;
+	}
+	CharacterStats.CurrentEnergy -= CharacterStats.LightAttackEnergyCost;
+	bIsLightAttack = true;
+	AInfomorphUE4Character* InfomorphCharacter = Cast<AInfomorphUE4Character>(CameraTarget);
+	if(InfomorphCharacter != nullptr)
+	{
+		FDamageEvent DamageEvent;
+		InfomorphCharacter->TakeDamage(CharacterStats.LightAttackDamage, DamageEvent, Controller, this);
 	}
 }
 
 void AInfomorphUE4Character::HeavyAttack()
 {
-
+	if(CharacterStats.CurrentEnergy - CharacterStats.HeavyAttackEnergyCost < 0.0f)
+	{
+		return;
+	}
+	CharacterStats.CurrentEnergy -= CharacterStats.HeavyAttackEnergyCost;
+	bIsHeavyAttack = true;
 }
 
 void AInfomorphUE4Character::SpecialAttack()
 {
-
+	if(CharacterStats.CurrentEnergy - CharacterStats.SpecialAttackEnergyCost < 0.0f)
+	{
+		return;
+	}
+	CharacterStats.CurrentEnergy -= CharacterStats.SpecialAttackEnergyCost;
+	bIsSpecialAttack = true;
 }
 
 void AInfomorphUE4Character::SpecialAbility()
@@ -326,6 +398,26 @@ void AInfomorphUE4Character::Confuse(float ConfusionTime, float Multiplier)
 {
 	CharacterStats.bIsConfused = true;
 	GetWorldTimerManager().SetTimer(ConfusionTimerHandle, this, &AInfomorphUE4Character::ConfusionEnd, ConfusionTime * Multiplier);
+}
+
+void AInfomorphUE4Character::EnableWeaponCollision()
+{
+	LogOnScreen("A MASZ!");
+}
+
+void AInfomorphUE4Character::DisableWeaponCollision()
+{
+	LogOnScreen("A JUZ NIE MASZ!");
+}
+
+void AInfomorphUE4Character::EnableFootCollision()
+{
+	LogOnScreen("A MASZ!");
+}
+
+void AInfomorphUE4Character::DisableFootCollision()
+{
+	LogOnScreen("A JUZ NIE MASZ!");
 }
 
 FVector AInfomorphUE4Character::GetEyesLocation() const
