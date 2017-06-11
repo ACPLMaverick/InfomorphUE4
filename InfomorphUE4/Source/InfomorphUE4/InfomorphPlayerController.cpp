@@ -5,17 +5,21 @@
 #include "InfomorphUE4.h"
 #include "Runtime/Engine/Classes/Camera/CameraComponent.h"
 #include "Runtime/CoreUObject/Public/UObject/UObjectIterator.h"
+#include "Perception/AISense_Hearing.h"
+#include "Runtime/Engine/Classes/GameFramework/CharacterMovementComponent.h"
 
 void AInfomorphPlayerController::MoveForward(float Value)
 {
 	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
-	if(PossessedCharacter != nullptr && !PossessedCharacter->IsConfused() && Value != 0.0f)
+	float MovementValue = Value * MovementMultiplier;
+	if(PossessedCharacter != nullptr && !PossessedCharacter->IsConfused() &&
+	   MovementValue != 0.0f)
 	{
 		const FRotator Rotation = GetControlRotation();
 		const FRotator YawRotation(0, Rotation.Yaw, 0);
 
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-		PossessedCharacter->AddMovementInput(Direction, Value * MovementMultiplier);
+		PossessedCharacter->AddMovementInput(Direction, MovementValue);
 		LastMovedTimer = 0.0f;
 	}
 }
@@ -23,13 +27,14 @@ void AInfomorphPlayerController::MoveForward(float Value)
 void AInfomorphPlayerController::MoveRight(float Value)
 {
 	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
-	if(PossessedCharacter != nullptr && !PossessedCharacter->IsConfused() && Value != 0.0f)
+	float MovementValue = Value * MovementMultiplier;
+	if(PossessedCharacter != nullptr && !PossessedCharacter->IsConfused() && MovementValue != 0.0f)
 	{
 		const FRotator Rotation = GetControlRotation();
 		const FRotator YawRotation(0, Rotation.Yaw, 0);
 
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-		PossessedCharacter->AddMovementInput(Direction, Value * MovementMultiplier);
+		PossessedCharacter->AddMovementInput(Direction, MovementValue);
 		LastMovedTimer = 0.0f;
 	}
 }
@@ -255,7 +260,8 @@ void AInfomorphPlayerController::PerformCameraLock()
 		{
 			FVector EyesLocation = PossessedCharacter->GetEyesLocation();
 			FVector Direction = PossessedCharacter->GetEyesDirection();
-			if(PossessedCharacter->LockCameraOnTarget(GetActorInLookDirection(EyesLocation, Direction)))
+			float MaxDistance = PossessedCharacter->GetSightRange();
+			if(PossessedCharacter->LockCameraOnTarget(GetActorInLookDirection(EyesLocation, Direction, MaxDistance)))
 			{
 				LastLookedTimer = LookTimerThreshold - 0.02f;
 			}
@@ -336,7 +342,17 @@ void AInfomorphPlayerController::PossessNewCharacter(AInfomorphUE4Character* New
 	CurrentlyPossessedCharacter->SpawnDefaultController();
 }
 
-AActor* AInfomorphPlayerController::GetActorInLookDirection(const FVector& EyesLocation, const FVector& Direction) const
+void AInfomorphPlayerController::MakeFootstepNoise()
+{
+	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
+	if(PossessedCharacter != nullptr)
+	{
+		float Speed = PossessedCharacter->GetCharacterMovement()->Velocity.Size();
+		UAISense_Hearing::ReportNoiseEvent(GetWorld(), PossessedCharacter->GetActorLocation(), 1.0f, PossessedCharacter, 1000.0f * Speed);
+	}
+}
+
+AActor* AInfomorphPlayerController::GetActorInLookDirection(const FVector& EyesLocation, const FVector& Direction, float MaxDistance) const
 {
 	UWorld* World = GetWorld();
 	if(World == nullptr)
@@ -345,7 +361,6 @@ AActor* AInfomorphPlayerController::GetActorInLookDirection(const FVector& EyesL
 	}
 
 	static const FName TraceTag = TEXT("LockTrace");
-	static const float MaxDistance = 3000.0f;
 
 	FCollisionObjectQueryParams ObjectQueryParams;
 	ObjectQueryParams.AddObjectTypesToQuery(ECollisionChannel::ECC_Pawn);

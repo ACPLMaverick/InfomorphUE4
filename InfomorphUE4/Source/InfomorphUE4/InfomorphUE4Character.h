@@ -24,6 +24,8 @@ public:
 		float SightRange;
 	UPROPERTY(EditAnywhere)
 		float HearRange;
+	UPROPERTY(EditAnywhere)
+		float LooseTargetTimeout;
 
 	float CurrentConsciousness;
 	float CurrentEnergy;
@@ -59,9 +61,13 @@ protected:
 
 	FTimerHandle ConfusionTimerHandle;
 
+	float LastTimeTargetSeen;
+
 protected:
 	void ProcessCameraLocked(float DeltaSeconds);
 	void ConfusionEnd();
+
+	bool IsTargetVisible(const FVector& Direction) const;
 
 public:
 	AInfomorphUE4Character();
