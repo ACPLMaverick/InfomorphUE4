@@ -21,6 +21,7 @@ FCharacterStats::FCharacterStats()
 	ConfusionUnpossessedTime = 3.0f;
 	SightRange = 1000.0f;
 	HearRange = 750.0f;
+	LooseTargetTimeout = 2.0f;
 }
 
 void FCharacterStats::Initialize()
@@ -38,7 +39,26 @@ void AInfomorphUE4Character::ProcessCameraLocked(float DeltaSeconds)
 	LockedCameraTimer = FMath::Clamp(LockedCameraTimer + DeltaSeconds, 0.0f, 1.0f);
 
 	FVector Direction = CameraTarget->GetActorLocation() - GetEyesLocation();
+	
+	if(Direction.Size() > CharacterStats.SightRange)
+	{
+		UnlockCamera();
+		return;
+	}
+
 	Direction.Normalize();
+
+	if(IsTargetVisible(Direction))
+	{
+		LastTimeTargetSeen = FPlatformTime::Seconds();
+	}
+
+	if(FPlatformTime::Seconds() - LastTimeTargetSeen > CharacterStats.LooseTargetTimeout)
+	{
+		UnlockCamera();
+		return;
+	}
+
 	FRotator LookRotation = Controller->GetControlRotation();
 	LookRotation.Yaw = Direction.Rotation().Yaw;
 
@@ -79,6 +99,28 @@ void AInfomorphUE4Character::ProcessCameraLocked(float DeltaSeconds)
 void AInfomorphUE4Character::ConfusionEnd()
 {
 	CharacterStats.bIsConfused = false;
+}
+
+bool AInfomorphUE4Character::IsTargetVisible(const FVector& Direction) const
+{
+	UWorld* World = GetWorld();
+	if(World == nullptr)
+	{
+		return false;
+	}
+
+	static const FName TraceTag = TEXT("TargetVisibleTest");
+
+	FCollisionObjectQueryParams ObjectQueryParams;
+	ObjectQueryParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldStatic);
+	ObjectQueryParams.AddObjectTypesToQuery(ECollisionChannel::ECC_Pawn);
+	FCollisionQueryParams TraceParams(TraceTag, true, this);
+
+	AActor* HitActor = nullptr;
+	FHitResult Hit;
+	bool bWasHit = World->LineTraceSingleByObjectType(Hit, GetEyesLocation(), GetEyesLocation() + Direction * CharacterStats.SightRange, ObjectQueryParams, TraceParams);
+
+	return Hit.GetActor() != nullptr && Hit.GetActor()->IsA<AInfomorphUE4Character>();
 }
 
 AInfomorphUE4Character::AInfomorphUE4Character()
@@ -240,6 +282,7 @@ bool AInfomorphUE4Character::LockCameraOnTarget(AActor* Target)
 
 	bIsCameraLocked = true;
 	LockedCameraTimer = 0.0f;
+	LastTimeTargetSeen = FPlatformTime::Seconds();
 	GetCharacterMovement()->bOrientRotationToMovement = false;
 	return true;
 }

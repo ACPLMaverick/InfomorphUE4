@@ -60,7 +60,7 @@ protected:
 	void PerformSkillSelectUp();
 	void PerformSkillSelectDown();
 
-	AActor* GetActorInLookDirection(const FVector& EyesLocation, const FVector &Direction) const;
+	AActor* GetActorInLookDirection(const FVector& EyesLocation, const FVector &Direction, float MaxDistance) const;
 
 public:
 	AInfomorphPlayerController();
@@ -72,6 +72,9 @@ public:
 	virtual void Tick(float DeltaSeconds) override;
 
 	void PossessNewCharacter(class AInfomorphUE4Character* NewCharacter);
+
+	UFUNCTION(BlueprintCallable, Category = Noise)
+		void MakeFootstepNoise();
 
 	FORCEINLINE float GetLastLookedTimer() const { return LastLookedTimer; }
 	FORCEINLINE float GetLastMovedTimer() const { return LastMovedTimer; }
