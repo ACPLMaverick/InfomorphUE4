@@ -13,6 +13,23 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Runtime/Engine/Classes/Components/ArrowComponent.h"
 
+FCharacterStats::FCharacterStats()
+{
+	BaseConsciousness = 80.0f;
+	BaseEnergy = 100.0f;
+	ConfusionPossessedTime = 2.0f;
+	ConfusionUnpossessedTime = 3.0f;
+	SightRange = 1000.0f;
+	HearRange = 750.0f;
+}
+
+void FCharacterStats::Initialize()
+{
+	CurrentConsciousness = BaseConsciousness;
+	CurrentEnergy = BaseEnergy;
+	bIsConfused = false;
+}
+
 //////////////////////////////////////////////////////////////////////////
 // AInfomorphUE4Character
 
@@ -61,7 +78,7 @@ void AInfomorphUE4Character::ProcessCameraLocked(float DeltaSeconds)
 
 void AInfomorphUE4Character::ConfusionEnd()
 {
-	bIsConfused = false;
+	CharacterStats.bIsConfused = false;
 }
 
 AInfomorphUE4Character::AInfomorphUE4Character()
@@ -86,9 +103,10 @@ AInfomorphUE4Character::AInfomorphUE4Character()
 	// Create a camera boom (pulls in towards the player if there is a collision)
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->TargetArmLength = 300.0f; // The camera follows at this distance behind the character	
+	CameraBoom->TargetArmLength = 400.0f; // The camera follows at this distance behind the character	
 	CameraBoom->bUsePawnControlRotation = true; // Rotate the arm based on the controller
 	CameraBoom->bEnableCameraLag = true;
+	CameraBoom->SetRelativeLocation(FVector(20.0f, 0.0f, 70.0f));
 
 	// Create a follow camera
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
@@ -100,21 +118,13 @@ AInfomorphUE4Character::AInfomorphUE4Character()
 	CameraTarget = nullptr;
 	LockedCameraTimer = 0.0f;
 	bIsCameraLocked = false;
-
-	ConfusionPossessedTime = 1.0f;
-	ConfusionUnPossessedTime = 1.5f;
-	bIsConfused = false;
-
-	BaseConsciousness = 80.0f;
-	BaseEnergy = 100.0f;
 }
 
 void AInfomorphUE4Character::BeginPlay()
 {
 	Super::BeginPlay();
 
-	CurrentConsciousness = BaseConsciousness;
-	CurrentEnergy = BaseEnergy;
+	CharacterStats.Initialize();
 }
 
 void AInfomorphUE4Character::Tick(float DeltaSeconds)
@@ -139,8 +149,7 @@ void AInfomorphUE4Character::PossessedBy(AController* NewController)
 	AInfomorphPlayerController* InfomorphPC = Cast<AInfomorphPlayerController>(NewController);
 	if(InfomorphPC != nullptr)
 	{
-		bIsConfused = true;
-		GetWorldTimerManager().SetTimer(ConfusionTimerHandle, this, &AInfomorphUE4Character::ConfusionEnd, ConfusionPossessedTime);
+		Confuse(CharacterStats.ConfusionPossessedTime);
 	}
 	else
 	{
@@ -148,8 +157,7 @@ void AInfomorphUE4Character::PossessedBy(AController* NewController)
 		AInfomorphBaseAIController* AIController = Cast<AInfomorphBaseAIController>(NewController);
 		if(AIController != nullptr)
 		{
-			bIsConfused = true;
-			GetWorldTimerManager().SetTimer(ConfusionTimerHandle, this, &AInfomorphUE4Character::ConfusionEnd, ConfusionUnPossessedTime);
+			Confuse(CharacterStats.ConfusionUnpossessedTime);
 		}
 	}
 }
@@ -202,7 +210,7 @@ void AInfomorphUE4Character::Attack()
 	AInfomorphUE4Character* Target = Cast<AInfomorphUE4Character>(CameraTarget);
 	if(Target != nullptr)
 	{
-		Target->CurrentConsciousness -= 15.0f;
+		Target->CharacterStats.CurrentConsciousness -= 15.0f;
 	}
 }
 
@@ -251,7 +259,7 @@ float AInfomorphUE4Character::GetPossessionChance(const FVector& PlayerLocation)
 		return 1.0f;
 	}
 
-	float ConsciousnessPercentage = CurrentConsciousness / BaseConsciousness;
+	float ConsciousnessPercentage = CharacterStats.CurrentConsciousness / CharacterStats.BaseConsciousness;
 	if(ConsciousnessPercentage <= 0.25f)
 	{
 		return 1.0f;
@@ -269,6 +277,12 @@ float AInfomorphUE4Character::GetPossessionChance(const FVector& PlayerLocation)
 	float PercentageInversed = 1.0f - ConsciousnessPercentage;
 	float Chance = FMath::Clamp((-2.0f * DotProduct + 1.0f) / 3.0f, 0.0f, 1.0f);
 	return Chance * PercentageInversed;
+}
+
+void AInfomorphUE4Character::Confuse(float ConfusionTime, float Multiplier)
+{
+	CharacterStats.bIsConfused = true;
+	GetWorldTimerManager().SetTimer(ConfusionTimerHandle, this, &AInfomorphUE4Character::ConfusionEnd, ConfusionTime * Multiplier);
 }
 
 FVector AInfomorphUE4Character::GetEyesLocation() const

@@ -36,8 +36,9 @@ void UInfomorphSkillPossession::OnBuildUpTimerCompleted()
 	}
 
 	InfomorphPC->PlayFeedback(PossessingVibrationEffect);
-	InfomorphPC->SetViewTargetWithBlend(CharacterToPossess, PossessionTime, EViewTargetBlendFunction::VTBlend_Linear);
+	InfomorphPC->SetViewTargetWithBlend(CharacterToPossess, PossessionTime, EViewTargetBlendFunction::VTBlend_Cubic);
 	InfomorphPC->GetWorldTimerManager().SetTimer(PossessingTimerHandle, this, &UInfomorphSkillPossession::OnPossessionTimerCompleted, PossessionTime);
+	InfomorphPC->GetWorldTimerManager().SetTimer(CheckIfPossessableTimerHandle, this, &UInfomorphSkillPossession::OnCheckIfPossessableTimerCompleted, 0.5f * PossessionTime);
 }
 
 void UInfomorphSkillPossession::OnPossessionTimerCompleted()
@@ -46,6 +47,30 @@ void UInfomorphSkillPossession::OnPossessionTimerCompleted()
 	InfomorphPC->PossessNewCharacter(CharacterToPossess);
 	InfomorphPC->ResetLookMultiplier();
 	InfomorphPC->ResetMovementMultiplier();
+}
+
+void UInfomorphSkillPossession::OnCheckIfPossessableTimerCompleted()
+{
+	if(InfomorphPC == nullptr)
+	{
+		StopUsing();
+		return;
+	}
+
+	AInfomorphUE4Character* CurrentlyPossessedCharacter = Cast<AInfomorphUE4Character>(InfomorphPC->GetPawn());
+	if(CurrentlyPossessedCharacter != nullptr)
+	{
+		float PossessionChance = CharacterToPossess->GetPossessionChance(CurrentlyPossessedCharacter->GetActorLocation());
+		if(PossessionChance < 1.0f)
+		{
+			float Random = FMath::RandRange(0.0f, 1.0f);
+			if(Random > PossessionChance)
+			{
+				CurrentlyPossessedCharacter->Confuse(CurrentlyPossessedCharacter->GetCharacterStats().ConfusionPossessedTime, 0.5f);
+				StopUsing();
+			}
+		}
+	}
 }
 
 void UInfomorphSkillPossession::Tick(float DeltaSeconds)
@@ -67,6 +92,12 @@ void UInfomorphSkillPossession::StartUsing(AInfomorphPlayerController* Infomorph
 		return;
 	}
 
+	if(!CanBeUsed())
+	{
+		return;
+	}
+	LastUsedTime = FPlatformTime::Seconds();
+
 	InfomorphPC = InfomorphPlayerController;
 
 	if(InfomorphPC != nullptr)
@@ -77,15 +108,6 @@ void UInfomorphSkillPossession::StartUsing(AInfomorphPlayerController* Infomorph
 			CharacterToPossess = Cast<AInfomorphUE4Character>(CurrentlyPossessedCharacter->GetCameraTarget());
 			if(CharacterToPossess != nullptr)
 			{
-				float PossessionChance = CharacterToPossess->GetPossessionChance(CurrentlyPossessedCharacter->GetActorLocation());
-				if(PossessionChance < 1.0f)
-				{
-					float Random = FMath::RandRange(0.0f, 1.0f);
-					if(Random > PossessionChance)
-					{
-						return;
-					}
-				}
 				InfomorphPC->SetLookMultiplier(0.0f);
 				InfomorphPC->PlayFeedback(BuildUpVibrationEffect);
 				BuildUpTimer = 0.0f;
@@ -107,10 +129,11 @@ void UInfomorphSkillPossession::StopUsing()
 	InfomorphPC->StopFeedback();
 	InfomorphPC->GetWorldTimerManager().ClearTimer(BuildUpTimerHandle);
 	InfomorphPC->GetWorldTimerManager().ClearTimer(PossessingTimerHandle);
+	InfomorphPC->GetWorldTimerManager().ClearTimer(CheckIfPossessableTimerHandle);
 
 	AInfomorphUE4Character* CurrentlyPossessedCharacter = Cast<AInfomorphUE4Character>(InfomorphPC->GetPawn());
 	if(CurrentlyPossessedCharacter != nullptr)
 	{
-		InfomorphPC->SetViewTargetWithBlend(CurrentlyPossessedCharacter, PossessionTime, EViewTargetBlendFunction::VTBlend_Linear);
+		InfomorphPC->SetViewTargetWithBlend(CurrentlyPossessedCharacter, PossessionTime, EViewTargetBlendFunction::VTBlend_Cubic);
 	}
 }

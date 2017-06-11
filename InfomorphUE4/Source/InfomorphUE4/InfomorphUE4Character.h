@@ -6,6 +6,34 @@
 #include "GameFramework/Character.h"
 #include "InfomorphUE4Character.generated.h"
 
+USTRUCT()
+struct FCharacterStats
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditAnywhere)
+		float BaseConsciousness;
+	UPROPERTY(EditAnywhere)
+		float BaseEnergy;
+	UPROPERTY(EditAnywhere)
+		float ConfusionPossessedTime;
+	UPROPERTY(EditAnywhere)
+		float ConfusionUnpossessedTime;
+	UPROPERTY(EditAnywhere)
+		float SightRange;
+	UPROPERTY(EditAnywhere)
+		float HearRange;
+
+	float CurrentConsciousness;
+	float CurrentEnergy;
+	bool bIsConfused;
+
+	FCharacterStats();
+
+	void Initialize();
+};
+
 UCLASS(config=Game)
 class AInfomorphUE4Character : public ACharacter
 {
@@ -20,18 +48,8 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class UCameraComponent* FollowCamera;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Possession)
-		float ConfusionPossessedTime;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Possession)
-		float ConfusionUnPossessedTime;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Info)
-		float BaseConsciousness;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Info)
-		float BaseEnergy;
-
-	float CurrentConsciousness;
-	float CurrentEnergy;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stats)
+		FCharacterStats CharacterStats;
 
 	bool bIsInStealthMode;
 
@@ -40,7 +58,6 @@ protected:
 	bool bIsCameraLocked;
 
 	FTimerHandle ConfusionTimerHandle;
-	bool bIsConfused;
 
 protected:
 	void ProcessCameraLocked(float DeltaSeconds);
@@ -66,6 +83,7 @@ public:
 	virtual void UnlockCamera();
 
 	float GetPossessionChance(const FVector& PlayerLocation);
+	void Confuse(float ConfusionTime, float Multiplier = 1.0f);
 
 	UFUNCTION(BlueprintCallable, Category = Movement)
 		FORCEINLINE bool IsInStealthMode() const { return bIsInStealthMode; }
@@ -74,7 +92,7 @@ public:
 		FORCEINLINE bool IsCameraLocked() const { return bIsCameraLocked; }
 
 	UFUNCTION(BlueprintCallable, Category = Possession)
-		FORCEINLINE bool IsConfused() const { return bIsConfused; }
+		FORCEINLINE bool IsConfused() const { return CharacterStats.bIsConfused; }
 
 	UFUNCTION(BlueprintCallable, Category = Camera)
 		FVector GetEyesLocation() const;
@@ -83,10 +101,13 @@ public:
 		FVector GetEyesDirection() const;
 
 	UFUNCTION(BlueprintCallable, Category = Info)
-		float GetSightRange() const { return 1000.0f; }
+		float GetSightRange() const { return CharacterStats.SightRange; }
+	UFUNCTION(BlueprintCallable, Category = Info)
+		float GetHearRange() const { return CharacterStats.HearRange; }
 
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 	FORCEINLINE AActor* GetCameraTarget() const { return CameraTarget; }
+	FORCEINLINE const FCharacterStats& GetCharacterStats() const { return CharacterStats; }
 };
 

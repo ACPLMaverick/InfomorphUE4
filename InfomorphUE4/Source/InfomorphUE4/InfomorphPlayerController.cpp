@@ -474,7 +474,18 @@ void AInfomorphPlayerController::Tick(float DeltaSeconds)
 	LastLookedTimer += DeltaSeconds;
 	LastMovedTimer += DeltaSeconds;
 
-	LogOnScreen(1, FColor::Yellow, Skills[CurrentSelectedSkillIndex].SkillName.ToString());
+	if(!Skills.IsValidIndex(CurrentSelectedSkillIndex) || Skills[CurrentSelectedSkillIndex].Skill == nullptr)
+	{
+		return;
+	}
+	
+	FColor LogColor = FColor::Yellow;
+	if(!Skills[CurrentSelectedSkillIndex].Skill->CanBeUsed())
+	{
+		LogColor = FColor(125, 125, 125, 255);
+	}
+
+	LogOnScreen(1, LogColor, Skills[CurrentSelectedSkillIndex].SkillName.ToString());
 	if(IsUsingSkill())
 	{
 		Skills[CurrentSelectedSkillIndex].Skill->Tick(DeltaSeconds);

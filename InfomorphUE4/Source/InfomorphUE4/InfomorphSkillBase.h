@@ -15,6 +15,12 @@ class INFOMORPHUE4_API UInfomorphSkillBase : public UObject
 {
 	GENERATED_BODY()
 
+protected:
+	UPROPERTY(EditAnywhere)
+		float Cooldown;
+
+	float LastUsedTime;
+
 public:
 	virtual void Tick(float DeltaSeconds);
 
@@ -24,6 +30,22 @@ public:
 	FORCEINLINE virtual bool IsBeingUsed() const
 	{
 		return false;
+	}
+
+	FORCEINLINE virtual bool CanBeUsed() const
+	{
+		float CurrentRealSeconds = FPlatformTime::Seconds();
+		return CurrentRealSeconds - LastUsedTime > Cooldown;
+	}
+
+	FORCEINLINE float GetLastUsedTime() const
+	{
+		return LastUsedTime;
+	}
+
+	FORCEINLINE float GetCooldown() const
+	{
+		return Cooldown;
 	}
 };
 
@@ -63,12 +85,14 @@ protected:
 
 	FTimerHandle BuildUpTimerHandle;
 	FTimerHandle PossessingTimerHandle;
+	FTimerHandle CheckIfPossessableTimerHandle;
 
 	float BuildUpTimer;
 
 protected:
 	void OnBuildUpTimerCompleted();
 	void OnPossessionTimerCompleted();
+	void OnCheckIfPossessableTimerCompleted();
 
 public:
 	virtual void Tick(float DeltaSeconds);
