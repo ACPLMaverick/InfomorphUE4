@@ -18,6 +18,7 @@ FCharacterStats::FCharacterStats()
 	BaseConsciousness = 80.0f;
 	BaseEnergy = 100.0f;
 	EnergyRecoveryPerSecond = 1.0f;
+	EnergyRestoreCooldown = 2.0f;
 	ConsciousnessArmorWhenPossessed = 0.3f;
 
 	ConfusionPossessedTime = 2.0f;
@@ -36,6 +37,8 @@ FCharacterStats::FCharacterStats()
 	LightAttackDamage = 15.0f;
 	HeavyAttackDamage = 40.0f;
 	SpecialAttackDamage = 40.0f;
+
+	SpecialAttackCooldown = 10.0f;
 }
 
 void FCharacterStats::Initialize()
@@ -187,13 +190,19 @@ void AInfomorphUE4Character::BeginPlay()
 	Super::BeginPlay();
 
 	CharacterStats.Initialize();
+	LastTimeTargetSeen = -CharacterStats.LooseTargetTimeout;
+	LastActionTime = -CharacterStats.EnergyRestoreCooldown;
+	LastSpecialAttackTime = -CharacterStats.SpecialAttackCooldown;
 }
 
 void AInfomorphUE4Character::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	CharacterStats.CurrentEnergy = FMath::Clamp(CharacterStats.CurrentEnergy + CharacterStats.EnergyRecoveryPerSecond * DeltaSeconds, 0.0f, CharacterStats.BaseEnergy);
+	if(GetWorld()->GetRealTimeSeconds() - LastActionTime > CharacterStats.EnergyRestoreCooldown)
+	{
+		CharacterStats.CurrentEnergy = FMath::Clamp(CharacterStats.CurrentEnergy + CharacterStats.EnergyRecoveryPerSecond * DeltaSeconds, 0.0f, CharacterStats.BaseEnergy);
+	}
 
 	if(Controller != nullptr && Controller->IsA<AInfomorphPlayerController>())
 	{
@@ -254,6 +263,7 @@ float AInfomorphUE4Character::TakeDamage(float DamageAmount, FDamageEvent const&
 	}
 
 	CharacterStats.CurrentEnergy = FMath::Clamp(CharacterStats.CurrentEnergy - EnergyLost, 0.0f, CharacterStats.BaseEnergy);
+	LastActionTime = GetWorld()->GetRealTimeSeconds();
 	CharacterStats.CurrentConsciousness = FMath::Clamp(CharacterStats.CurrentConsciousness - ActualDamage, 0.0f, CharacterStats.BaseConsciousness);
 	bWasHit = ActualDamage > 0.0f;
 
@@ -277,6 +287,7 @@ void AInfomorphUE4Character::Dodge()
 		return;
 	}
 	CharacterStats.CurrentEnergy -= CharacterStats.DodgeEnergyCost;
+	LastActionTime = GetWorld()->GetRealTimeSeconds();
 	bIsDodging = true;
 }
 
@@ -309,13 +320,8 @@ void AInfomorphUE4Character::Attack()
 		return;
 	}
 	CharacterStats.CurrentEnergy -= CharacterStats.LightAttackEnergyCost;
+	LastActionTime = GetWorld()->GetRealTimeSeconds();
 	bIsLightAttack = true;
-	AInfomorphUE4Character* InfomorphCharacter = Cast<AInfomorphUE4Character>(CameraTarget);
-	if(InfomorphCharacter != nullptr)
-	{
-		FDamageEvent DamageEvent;
-		InfomorphCharacter->TakeDamage(CharacterStats.LightAttackDamage, DamageEvent, Controller, this);
-	}
 }
 
 void AInfomorphUE4Character::HeavyAttack()
@@ -325,6 +331,7 @@ void AInfomorphUE4Character::HeavyAttack()
 		return;
 	}
 	CharacterStats.CurrentEnergy -= CharacterStats.HeavyAttackEnergyCost;
+	LastActionTime = GetWorld()->GetRealTimeSeconds();
 	bIsHeavyAttack = true;
 }
 
@@ -334,7 +341,15 @@ void AInfomorphUE4Character::SpecialAttack()
 	{
 		return;
 	}
+	if(GetWorld()->GetRealTimeSeconds() - LastSpecialAttackTime <= CharacterStats.SpecialAttackCooldown)
+	{
+		return;
+	}
+
+	LastSpecialAttackTime = GetWorld()->GetRealTimeSeconds();
+
 	CharacterStats.CurrentEnergy -= CharacterStats.SpecialAttackEnergyCost;
+	LastActionTime = GetWorld()->GetRealTimeSeconds();
 	bIsSpecialAttack = true;
 }
 

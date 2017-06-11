@@ -96,7 +96,6 @@ void UInfomorphSkillPossession::StartUsing(AInfomorphPlayerController* Infomorph
 	{
 		return;
 	}
-	LastUsedTime = FPlatformTime::Seconds();
 
 	InfomorphPC = InfomorphPlayerController;
 
@@ -106,8 +105,10 @@ void UInfomorphSkillPossession::StartUsing(AInfomorphPlayerController* Infomorph
 		if(CurrentlyPossessedCharacter != nullptr)
 		{
 			CharacterToPossess = Cast<AInfomorphUE4Character>(CurrentlyPossessedCharacter->GetCameraTarget());
-			if(CharacterToPossess != nullptr)
+			if(CharacterToPossess != nullptr && !CharacterToPossess->IsDead())
 			{
+				LastUsedTime = FPlatformTime::Seconds();
+
 				InfomorphPC->SetLookMultiplier(0.0f);
 				InfomorphPC->PlayFeedback(BuildUpVibrationEffect);
 				BuildUpTimer = 0.0f;
