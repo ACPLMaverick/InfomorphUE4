@@ -3,10 +3,11 @@
 #include "InfomorphPlayerController.h"
 #include "InfomorphUE4Character.h"
 #include "InfomorphUE4.h"
-#include "Runtime/Engine/Classes/Camera/CameraComponent.h"
-#include "Runtime/CoreUObject/Public/UObject/UObjectIterator.h"
+#include "Camera/CameraComponent.h"
+#include "UObject/UObjectIterator.h"
 #include "Perception/AISense_Hearing.h"
-#include "Runtime/Engine/Classes/GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "Components/SphereComponent.h"
 
 void AInfomorphPlayerController::MoveForward(float Value)
 {
@@ -208,7 +209,15 @@ void AInfomorphPlayerController::PerformInteraction()
 	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
 	if(PossessedCharacter != nullptr && !PossessedCharacter->IsActionsDisabled())
 	{
-		LogOnScreen("Interaction");
+		if(IsInteractionPossible())
+		{
+			USceneComponent* InteractionTarget = CurrentInteractable->GetInteractionTarget(PossessedCharacter);
+			PossessedCharacter->SetInteractionTarget(InteractionTarget);
+			if(InteractionTarget == nullptr)
+			{
+				CurrentInteractable->Interact(PossessedCharacter);
+			}
+		}
 	}
 }
 
@@ -358,6 +367,20 @@ void AInfomorphPlayerController::MakeFootstepNoise()
 	}
 }
 
+void AInfomorphPlayerController::InteractWithCurrentInteractable()
+{
+	if(!IsInteractionPossible())
+	{
+		return;
+	}
+
+	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
+	if(PossessedCharacter != nullptr)
+	{
+		CurrentInteractable->Interact(PossessedCharacter);
+	}
+}
+
 AActor* AInfomorphPlayerController::GetActorInLookDirection(const FVector& EyesLocation, const FVector& Direction, float MaxDistance) const
 {
 	UWorld* World = GetWorld();
@@ -408,6 +431,54 @@ AActor* AInfomorphPlayerController::GetActorInLookDirection(const FVector& EyesL
 	}
 
 	return HitActor;
+}
+
+void AInfomorphPlayerController::LookForInteractables()
+{
+	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
+	if(PossessedCharacter == nullptr)
+	{
+		return;
+	}
+
+	TArray<AActor*> InteractablesInRange;
+
+	PossessedCharacter->GetInteractionSphere()->GetOverlappingActors(InteractablesInRange);
+
+	int32 InteractablesNum = InteractablesInRange.Num();
+	if(InteractablesNum == 0)
+	{
+		CurrentInteractable = nullptr;
+	}
+	else
+	{
+		static const float MaxAngle = 60.0f;
+		float MinAngle = MaxAngle;
+
+		for(int32 i = 0; i < InteractablesNum; ++i)
+		{
+			AInfomorphInteractable* Interactable = Cast<AInfomorphInteractable>(InteractablesInRange[i]);
+			if(Interactable == nullptr)
+			{
+				continue;
+			}
+
+			FVector CameraToInteractable = Interactable->GetActorLocation() - PossessedCharacter->GetEyesLocation();
+			CameraToInteractable.Normalize();
+			float Dot = FVector::DotProduct(CameraToInteractable, PossessedCharacter->GetEyesDirection());
+			float Angle = FMath::Acos(Dot);
+			if(Angle < MaxAngle && Angle < MinAngle)
+			{
+				MinAngle = Angle;
+				CurrentInteractable = Interactable;
+			}
+		}
+	}
+
+	if(CurrentInteractable != nullptr)
+	{
+		LogOnScreen(21, FColor::Cyan, FString("CurrentInteractable: ").Append(CurrentInteractable->GetName()));
+	}
 }
 
 AInfomorphPlayerController::AInfomorphPlayerController() : Super()
@@ -513,6 +584,15 @@ void AInfomorphPlayerController::Tick(float DeltaSeconds)
 	if(!Skills[CurrentSelectedSkillIndex].Skill->CanBeUsed())
 	{
 		LogColor = FColor(125, 125, 125, 255);
+	}
+
+	if(PossessedCharacter != nullptr && !PossessedCharacter->IsDead())
+	{
+		LookForInteractables();
+	}
+	else
+	{
+		CurrentInteractable = nullptr;
 	}
 
 	LogOnScreen(1, LogColor, Skills[CurrentSelectedSkillIndex].SkillName.ToString().Append(FString::Printf(TEXT(", ratio: %.4f"), GetCurrentSkillRemainingRatio())));

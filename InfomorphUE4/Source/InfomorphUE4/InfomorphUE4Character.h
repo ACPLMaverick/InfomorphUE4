@@ -78,6 +78,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class UCameraComponent* FollowCamera;
 
+	UPROPERTY(EditAnywhere, Category = Interaction)
+		class USphereComponent* InteractionSphere;
+
 	UPROPERTY(EditAnywhere, Category = Weapon)
 		TSubclassOf<AInfomorphWeapon> WeaponClass;
 
@@ -97,6 +100,12 @@ protected:
 	AActor* CameraTarget;
 	float LockedCameraTimer;
 	bool bIsCameraLocked;
+
+	USceneComponent* InteractionTarget;
+	float InteractionTargetSetTimer;
+	float InteractionRotateToTargetTimer;
+	float InteractionMoveToTargetLerpTime;
+	float InteractionRotateToTargetLerpTime;
 
 	class UMaterialInstanceDynamic* MaterialInstance;
 
@@ -120,12 +129,16 @@ protected:
 
 protected:
 	void ProcessCameraLocked(float DeltaSeconds);
+	void ProcessInteractionTarget(float DeltaSeconds);
+
 	void ConfusionEnd();
 
 	void DestroyActor();
 	void RestartLevel();
 
 	bool IsTargetVisible(const FVector& Direction) const;
+
+	float CalculateTargetYaw(const FRotator& CurrentRotation, const FRotator& TargetRotation, float LerpT) const;
 
 public:
 	AInfomorphUE4Character();
@@ -152,6 +165,7 @@ public:
 
 	float GetPossessionChance(const FVector& PlayerLocation);
 	void Confuse(float ConfusionTime, float Multiplier = 1.0f);
+	void SetInteractionTarget(USceneComponent* NewInteractionTarget);
 
 	UFUNCTION(BlueprintCallable, Category = Attack)
 		void EnableWeaponCollision();
@@ -186,7 +200,7 @@ public:
 
 	FORCEINLINE bool IsActionsDisabled() const
 	{
-		return bIsLightAttack || bIsHeavyAttack || bIsDodging || bIsSpecialAttack || bWasHit || CharacterStats.bIsConfused || IsDead();
+		return bIsLightAttack || bIsHeavyAttack || bIsDodging || bIsSpecialAttack || bWasHit || CharacterStats.bIsConfused || IsDead() || InteractionTarget != nullptr;
 	}
 
 	UFUNCTION(BlueprintCallable, Category = Attack) 
@@ -280,5 +294,6 @@ public:
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 	FORCEINLINE AActor* GetCameraTarget() const { return CameraTarget; }
 	FORCEINLINE const FCharacterStats& GetCharacterStats() const { return CharacterStats; }
+	FORCEINLINE class USphereComponent* GetInteractionSphere() const { return InteractionSphere; }
 };
 

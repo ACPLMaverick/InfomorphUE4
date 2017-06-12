@@ -15,6 +15,7 @@
 #include "Components/ArrowComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Components/SphereComponent.h"
 
 FCharacterStats::FCharacterStats()
 {
@@ -57,7 +58,7 @@ void FCharacterStats::Initialize()
 
 void AInfomorphUE4Character::ProcessCameraLocked(float DeltaSeconds)
 {
-	LockedCameraTimer = FMath::Clamp(LockedCameraTimer + DeltaSeconds, 0.0f, 1.0f);
+	LockedCameraTimer += DeltaSeconds;
 
 	FVector Direction = CameraTarget->GetActorLocation() - GetEyesLocation();
 	
@@ -108,13 +109,62 @@ void AInfomorphUE4Character::ProcessCameraLocked(float DeltaSeconds)
 
 
 	FRotator CharacterRotation = GetActorRotation();
-	float TargetYaw = LookRotation.Yaw;
-	if(FMath::Abs(LookRotation.Yaw - CharacterRotation.Yaw) > 180.0f)
-	{
-		TargetYaw = CharacterRotation.Yaw + FMath::Sign(CharacterRotation.Yaw) * (180.0f - FMath::Abs(CharacterRotation.Yaw) + 180.0f - FMath::Abs(LookRotation.Yaw));
-	}
-	CharacterRotation.Yaw = FMath::Lerp(CharacterRotation.Yaw, TargetYaw, LockedCameraTimer);
+	CharacterRotation.Yaw = CalculateTargetYaw(CharacterRotation, LookRotation, LockedCameraTimer);
 	SetActorRotation(CharacterRotation);
+}
+
+void AInfomorphUE4Character::ProcessInteractionTarget(float DeltaSeconds)
+{
+	FVector Difference = InteractionTarget->GetComponentLocation() - GetActorLocation();
+	Difference.Z = 0.0f;
+	float DifferenceSize = Difference.Size();
+
+	if(DifferenceSize < 30.0f)
+	{
+		if(InteractionRotateToTargetLerpTime == 0.0f)
+		{
+			AInfomorphPlayerController* InfomorphPC = Cast<AInfomorphPlayerController>(GetController());
+			if(InfomorphPC != nullptr)
+			{
+				InfomorphPC->InteractWithCurrentInteractable();
+			}
+			InteractionTarget = nullptr;
+			
+			return;
+		}
+
+		InteractionRotateToTargetTimer += DeltaSeconds;
+
+		FRotator CharacterRotation = GetActorRotation();
+		CharacterRotation.Yaw = CalculateTargetYaw(CharacterRotation, InteractionTarget->GetForwardVector().Rotation(), InteractionRotateToTargetTimer / InteractionRotateToTargetLerpTime);
+		SetActorRotation(CharacterRotation);
+
+		if(FMath::Abs(CharacterRotation.Yaw - InteractionTarget->GetForwardVector().Rotation().Yaw) < 3.0f)
+		{
+			AInfomorphPlayerController* InfomorphPC = Cast<AInfomorphPlayerController>(GetController());
+			if(InfomorphPC != nullptr)
+			{
+				InfomorphPC->InteractWithCurrentInteractable();
+			}
+			InteractionTarget = nullptr;
+		}
+
+		return;
+	}
+
+	InteractionTargetSetTimer += DeltaSeconds;
+
+	if(InteractionMoveToTargetLerpTime == 0.0f)
+	{
+		return;
+	}
+
+	FRotator CharacterRotation = GetActorRotation();
+	CharacterRotation.Yaw = CalculateTargetYaw(CharacterRotation, Difference.Rotation(), InteractionTargetSetTimer / InteractionMoveToTargetLerpTime);
+	SetActorRotation(CharacterRotation);
+
+	FVector Direction = FRotationMatrix(FRotator(0.0f, CharacterRotation.Yaw, 0.0f)).GetUnitAxis(EAxis::X);
+	AddMovementInput(Direction);
 }
 
 void AInfomorphUE4Character::ConfusionEnd()
@@ -154,6 +204,16 @@ bool AInfomorphUE4Character::IsTargetVisible(const FVector& Direction) const
 	return Hit.GetActor() != nullptr && Hit.GetActor()->IsA<AInfomorphUE4Character>();
 }
 
+float AInfomorphUE4Character::CalculateTargetYaw(const FRotator& CurrentRotation, const FRotator& TargetRotation, float LerpT) const
+{
+	float TargetYaw = TargetRotation.Yaw;
+	if(FMath::Abs(TargetYaw - CurrentRotation.Yaw) > 180.0f)
+	{
+		TargetYaw = CurrentRotation.Yaw + FMath::Sign(CurrentRotation.Yaw) * (180.0f - FMath::Abs(CurrentRotation.Yaw) + 180.0f - FMath::Abs(TargetYaw));
+	}
+	return FMath::Lerp(CurrentRotation.Yaw, TargetYaw, FMath::Clamp(LerpT, 0.0f, 1.0f));
+}
+
 AInfomorphUE4Character::AInfomorphUE4Character()
 {
 	// Set size for collision capsule
@@ -185,6 +245,11 @@ AInfomorphUE4Character::AInfomorphUE4Character()
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
+
+	InteractionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("InteractionSphere"));
+	InteractionSphere->SetupAttachment(RootComponent);
+	InteractionSphere->SetSphereRadius(400.0f);
+	InteractionSphere->bGenerateOverlapEvents = true;
 
 	bIsInStealthMode = false;
 
@@ -252,7 +317,12 @@ void AInfomorphUE4Character::Tick(float DeltaSeconds)
 		CharacterStats.CurrentEnergy = FMath::Clamp(CharacterStats.CurrentEnergy, 0.0f, CharacterStats.BaseEnergy);
 	}
 
-	float CurrentMultiplier;
+	if(InteractionTarget != nullptr)
+	{
+		ProcessInteractionTarget(DeltaSeconds);
+	}
+
+	float CurrentMultiplier = 0.0f;
 	if(MaterialInstance != nullptr)
 	{
 		MaterialInstance->GetScalarParameterValue("PossessedMultiplier", CurrentMultiplier);
@@ -569,6 +639,27 @@ void AInfomorphUE4Character::Confuse(float ConfusionTime, float Multiplier)
 {
 	CharacterStats.bIsConfused = true;
 	GetWorldTimerManager().SetTimer(ConfusionTimerHandle, this, &AInfomorphUE4Character::ConfusionEnd, ConfusionTime * Multiplier);
+}
+
+void AInfomorphUE4Character::SetInteractionTarget(USceneComponent* NewInteractionTarget)
+{
+	InteractionTarget = NewInteractionTarget;
+	InteractionTargetSetTimer = 0.0f;
+	InteractionRotateToTargetTimer = 0.0f;
+
+	if(NewInteractionTarget != nullptr)
+	{
+		FVector Difference = NewInteractionTarget->GetComponentLocation() - GetActorLocation();
+		Difference.Z = 0.0f;
+
+		float TargetMoveYaw = CalculateTargetYaw(GetActorRotation(), Difference.Rotation(), 1.0f);
+		float YawDifference = TargetMoveYaw - GetActorRotation().Yaw;
+		InteractionMoveToTargetLerpTime = FMath::Abs(YawDifference) / 60.0f;
+
+		float TargetRotateYaw = CalculateTargetYaw(FRotator(0.0f, TargetMoveYaw, 0.0f), NewInteractionTarget->GetForwardVector().Rotation(), 1.0f);
+		YawDifference = TargetRotateYaw - (GetActorRotation().Yaw + YawDifference);
+		InteractionRotateToTargetLerpTime = FMath::Abs(YawDifference) / 60.0f;
+	}
 }
 
 void AInfomorphUE4Character::EnableWeaponCollision()
