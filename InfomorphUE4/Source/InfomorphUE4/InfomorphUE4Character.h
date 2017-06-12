@@ -22,6 +22,8 @@ public:
 		float EnergyRestoreCooldown;
 	UPROPERTY(EditAnywhere, Category = Stats)
 		float ConsciousnessArmorWhenPossessed;
+	UPROPERTY(EditAnywhere, Category = Stats)
+		float DodgeSpeed;
 	UPROPERTY(EditAnywhere, Category = Confusion)
 		float ConfusionPossessedTime;
 	UPROPERTY(EditAnywhere, Category = Confusion)
@@ -85,6 +87,8 @@ protected:
 
 	FTimerHandle ConfusionTimerHandle;
 
+	FVector DodgeWorldDirection;
+
 	float LastTimeTargetSeen;
 	float LastActionTime;
 	float LastSpecialAttackTime;
@@ -93,6 +97,7 @@ protected:
 	bool bIsHeavyAttack;
 	bool bIsSpecialAttack;
 	bool bIsDodging;
+	bool bIsDodgingZeroInput;
 	bool bWasHit;
 	bool bIsBlocking;
 
@@ -112,7 +117,7 @@ public:
 
 	virtual void StartBlock();
 	virtual void EndBlock();
-	virtual void Dodge();
+	virtual void Dodge(const FVector& DodgeDirection);
 	virtual void EnterStealthMode();
 	virtual void ExitStealthMode();
 	virtual void Attack();
@@ -153,6 +158,8 @@ public:
 		FORCEINLINE bool WasHit() const { return bWasHit; }
 	UFUNCTION(BlueprintCallable, Category = Dodge)
 		FORCEINLINE bool IsDodging() const { return bIsDodging; }
+	UFUNCTION(BlueprintCallable, Category = Dodge)
+		FORCEINLINE bool IsDodgingZeroInput() const { return bIsDodgingZeroInput; }
 	UFUNCTION(BlueprintCallable, Category = Block)
 		FORCEINLINE bool IsBlocking() const { return bIsBlocking; }
 	UFUNCTION(BlueprintCallable, Category = Info)
@@ -181,6 +188,7 @@ public:
 		void ResetDodging()
 	{
 		bIsDodging = false;
+		bIsDodgingZeroInput = false;
 	}
 
 	UFUNCTION(BlueprintCallable, Category = Block)

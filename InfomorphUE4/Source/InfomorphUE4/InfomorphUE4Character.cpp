@@ -20,6 +20,7 @@ FCharacterStats::FCharacterStats()
 	EnergyRecoveryPerSecond = 1.0f;
 	EnergyRestoreCooldown = 2.0f;
 	ConsciousnessArmorWhenPossessed = 0.3f;
+	DodgeSpeed = 1.0f;
 
 	ConfusionPossessedTime = 2.0f;
 	ConfusionUnpossessedTime = 3.0f;
@@ -193,6 +194,14 @@ void AInfomorphUE4Character::BeginPlay()
 	LastTimeTargetSeen = -CharacterStats.LooseTargetTimeout;
 	LastActionTime = -CharacterStats.EnergyRestoreCooldown;
 	LastSpecialAttackTime = -CharacterStats.SpecialAttackCooldown;
+
+	bIsLightAttack = 
+		bIsHeavyAttack = 
+		bIsSpecialAttack = 
+		bIsDodging = 
+		bIsDodgingZeroInput = 
+		bWasHit = 
+		bIsBlocking = false;
 }
 
 void AInfomorphUE4Character::Tick(float DeltaSeconds)
@@ -207,6 +216,15 @@ void AInfomorphUE4Character::Tick(float DeltaSeconds)
 	if(Controller != nullptr && Controller->IsA<AInfomorphPlayerController>())
 	{
 		LogOnScreen(12345, FColor::Green, FString::Printf(TEXT("Consciousness: %.3f, Energy: %.3f"), CharacterStats.CurrentConsciousness, CharacterStats.CurrentEnergy));
+	}
+
+	if(bIsDodging)
+	{
+		AddMovementInput(DodgeWorldDirection, CharacterStats.DodgeSpeed);
+	}
+	else
+	{
+		GetCharacterMovement()->bOrientRotationToMovement = !IsCameraLocked();
 	}
 
 	if(bIsCameraLocked && CameraTarget != nullptr)
@@ -280,7 +298,7 @@ void AInfomorphUE4Character::EndBlock()
 	bIsBlocking = false;
 }
 
-void AInfomorphUE4Character::Dodge()
+void AInfomorphUE4Character::Dodge(const FVector& DodgeDirection)
 {
 	if(CharacterStats.CurrentEnergy - CharacterStats.DodgeEnergyCost < 0.0f)
 	{
@@ -289,6 +307,19 @@ void AInfomorphUE4Character::Dodge()
 	CharacterStats.CurrentEnergy -= CharacterStats.DodgeEnergyCost;
 	LastActionTime = GetWorld()->GetRealTimeSeconds();
 	bIsDodging = true;
+
+	if(DodgeDirection.Size() > 0.0f)
+	{
+		DodgeWorldDirection = GetEyesDirection().ToOrientationRotator().RotateVector(DodgeDirection);
+	}
+	else
+	{
+		bIsDodgingZeroInput = true;
+		GetCharacterMovement()->bOrientRotationToMovement = false;
+		DodgeWorldDirection = -GetActorForwardVector();
+		DodgeWorldDirection.Z = 0.0f;
+	}
+	DodgeWorldDirection.Normalize();
 }
 
 void AInfomorphUE4Character::EnterStealthMode()

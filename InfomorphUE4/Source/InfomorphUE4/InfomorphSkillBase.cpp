@@ -25,6 +25,10 @@ void UInfomorphSkillBase::StopUsing()
 void FSkillInfo::Initialize()
 {
 	Skill = NewObject<UInfomorphSkillBase>((UObject*)GetTransientPackage(), SkillClass);
+	if(Skill != nullptr)
+	{
+		Skill->LastUsedTime = -Skill->Cooldown;
+	}
 }
 
 //Possession skill methods

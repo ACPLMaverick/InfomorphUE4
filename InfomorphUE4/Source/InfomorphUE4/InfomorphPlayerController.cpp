@@ -166,11 +166,14 @@ void AInfomorphPlayerController::PerformDodge()
 	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
 	if(PossessedCharacter != nullptr && !PossessedCharacter->IsActionsDisabled())
 	{
+		float Forward = InputComponent->GetAxisValue("MoveForward");
+		float Right = InputComponent->GetAxisValue("MoveRight");
+		FVector DodgeDirection(Forward, Right, 0.0f);
 		if(PossessedCharacter->IsInStealthMode())
 		{
 			PossessedCharacter->ExitStealthMode();
 		}
-		PossessedCharacter->Dodge();
+		PossessedCharacter->Dodge(DodgeDirection);
 	}
 }
 
@@ -503,7 +506,7 @@ void AInfomorphPlayerController::Tick(float DeltaSeconds)
 		LogColor = FColor(125, 125, 125, 255);
 	}
 
-	LogOnScreen(1, LogColor, Skills[CurrentSelectedSkillIndex].SkillName.ToString());
+	LogOnScreen(1, LogColor, Skills[CurrentSelectedSkillIndex].SkillName.ToString().Append(FString::Printf(TEXT(", ratio: %.4f"), GetCurrentSkillRemainingRatio())));
 	if(IsUsingSkill())
 	{
 		Skills[CurrentSelectedSkillIndex].Skill->Tick(DeltaSeconds);

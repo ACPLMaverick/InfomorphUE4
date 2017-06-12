@@ -13,6 +13,8 @@
 UCLASS(Blueprintable, BlueprintType, abstract)
 class INFOMORPHUE4_API UInfomorphSkillBase : public UObject
 {
+	friend struct FSkillInfo;
+
 	GENERATED_BODY()
 
 protected:

@@ -126,4 +126,19 @@ public:
 	{
 		return Skills.IsValidIndex(CurrentSelectedSkillIndex) && Skills[CurrentSelectedSkillIndex].Skill != nullptr && Skills[CurrentSelectedSkillIndex].Skill->IsBeingUsed();
 	}
+
+	//Returns float from 0 to 1, where 1 means that whole cooldown remains and 0 means that skill is ready
+	UFUNCTION(BlueprintCallable, Category = Skills)
+	FORCEINLINE float GetCurrentSkillRemainingRatio() const
+	{
+		if(CurrentSelectedSkillIndex >= Skills.Num() || Skills[CurrentSelectedSkillIndex].Skill == nullptr)
+		{
+			return 1.0f;
+		}
+
+		UInfomorphSkillBase* Skill = Skills[CurrentSelectedSkillIndex].Skill;
+		float TimeElapsedSinceLastUsage = FPlatformTime::Seconds() - Skill->GetLastUsedTime();
+		float Ratio = 1.0f - TimeElapsedSinceLastUsage / Skill->GetCooldown();
+		return FMath::Clamp(Ratio, 0.0f, 1.0f);
+	}
 };
