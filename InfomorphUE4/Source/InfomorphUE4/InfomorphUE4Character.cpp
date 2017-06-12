@@ -4,6 +4,7 @@
 #include "InfomorphUE4.h"
 #include "InfomorphPlayerController.h"
 #include "InfomorphBaseAIController.h"
+#include "InfomorphUE4GameMode.h"
 #include "Kismet/HeadMountedDisplayFunctionLibrary.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -11,7 +12,9 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
-#include "Runtime/Engine/Classes/Components/ArrowComponent.h"
+#include "Components/ArrowComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "Components/SkeletalMeshComponent.h"
 
 FCharacterStats::FCharacterStats()
 {
@@ -119,6 +122,16 @@ void AInfomorphUE4Character::ConfusionEnd()
 	CharacterStats.bIsConfused = false;
 }
 
+void AInfomorphUE4Character::DestroyActor()
+{
+	Destroy();
+}
+
+void AInfomorphUE4Character::RestartLevel()
+{
+	GetWorld()->ServerTravel("?reset");
+}
+
 bool AInfomorphUE4Character::IsTargetVisible(const FVector& Direction) const
 {
 	UWorld* World = GetWorld();
@@ -192,6 +205,13 @@ AInfomorphUE4Character::AInfomorphUE4Character()
 void AInfomorphUE4Character::BeginPlay()
 {
 	Super::BeginPlay();
+	MaterialInstance = UMaterialInstanceDynamic::Create(GetMesh()->GetMaterial(0), GetMesh());
+
+	if(MaterialInstance != nullptr)
+	{
+		MaterialInstance->SetScalarParameterValue("PossessedMultiplier", 0.0f);
+		GetMesh()->SetMaterial(0, MaterialInstance);
+	}
 
 	CharacterStats.Initialize();
 	LastTimeTargetSeen = -CharacterStats.LooseTargetTimeout;
@@ -222,12 +242,35 @@ void AInfomorphUE4Character::Tick(float DeltaSeconds)
 
 	if(GetWorld()->GetRealTimeSeconds() - LastActionTime > CharacterStats.EnergyRestoreCooldown)
 	{
-		CharacterStats.CurrentEnergy = FMath::Clamp(CharacterStats.CurrentEnergy + CharacterStats.EnergyRecoveryPerSecond * DeltaSeconds, 0.0f, CharacterStats.BaseEnergy);
+		float Multiplier = 1.0f;
+		if(IsBlocking())
+		{
+			Multiplier = 0.5f;
+		}
+
+		CharacterStats.CurrentEnergy += CharacterStats.EnergyRecoveryPerSecond * DeltaSeconds * Multiplier;
+		CharacterStats.CurrentEnergy = FMath::Clamp(CharacterStats.CurrentEnergy, 0.0f, CharacterStats.BaseEnergy);
+	}
+
+	float CurrentMultiplier;
+	if(MaterialInstance != nullptr)
+	{
+		MaterialInstance->GetScalarParameterValue("PossessedMultiplier", CurrentMultiplier);
 	}
 
 	if(Controller != nullptr && Controller->IsA<AInfomorphPlayerController>())
 	{
 		LogOnScreen(12345, FColor::Green, FString::Printf(TEXT("Consciousness: %.3f, Energy: %.3f"), CharacterStats.CurrentConsciousness, CharacterStats.CurrentEnergy));
+		CurrentMultiplier += DeltaSeconds;
+	}
+	else
+	{
+		CurrentMultiplier -= DeltaSeconds;
+	}
+
+	if(MaterialInstance != nullptr)
+	{
+		MaterialInstance->SetScalarParameterValue("PossessedMultiplier", FMath::Clamp(CurrentMultiplier, 0.0f, 1.0f));
 	}
 
 	if(bIsDodging)
@@ -301,6 +344,15 @@ float AInfomorphUE4Character::TakeDamage(float DamageAmount, FDamageEvent const&
 	return ActualDamage;
 }
 
+void AInfomorphUE4Character::FellOutOfWorld(const UDamageType& DamageType)
+{
+	if(!IsDead())
+	{
+		Dedigitalize();
+	}
+	CharacterStats.CurrentConsciousness = 0.0f;
+}
+
 void AInfomorphUE4Character::StartBlock()
 {
 	bIsBlocking = true;
@@ -327,6 +379,12 @@ void AInfomorphUE4Character::Dodge(const FVector& DodgeDirection)
 	{
 		return;
 	}
+
+	if(IsBlocking())
+	{
+		EndBlock();
+	}
+
 	CharacterStats.CurrentEnergy -= CharacterStats.DodgeEnergyCost;
 	LastActionTime = GetWorld()->GetRealTimeSeconds();
 	bIsDodging = true;
@@ -373,6 +431,11 @@ void AInfomorphUE4Character::Attack()
 	{
 		return;
 	}
+
+	if(IsBlocking())
+	{
+		EndBlock();
+	}
 	CharacterStats.CurrentEnergy -= CharacterStats.LightAttackEnergyCost;
 	LastActionTime = GetWorld()->GetRealTimeSeconds();
 	bIsLightAttack = true;
@@ -387,6 +450,11 @@ void AInfomorphUE4Character::HeavyAttack()
 	if(CharacterStats.CurrentEnergy - CharacterStats.HeavyAttackEnergyCost < 0.0f)
 	{
 		return;
+	}
+
+	if(IsBlocking())
+	{
+		EndBlock();
 	}
 	CharacterStats.CurrentEnergy -= CharacterStats.HeavyAttackEnergyCost;
 	LastActionTime = GetWorld()->GetRealTimeSeconds();
@@ -406,6 +474,11 @@ void AInfomorphUE4Character::SpecialAttack()
 	if(GetWorld()->GetRealTimeSeconds() - LastSpecialAttackTime <= CharacterStats.SpecialAttackCooldown)
 	{
 		return;
+	}
+
+	if(IsBlocking())
+	{
+		EndBlock();
 	}
 
 	LastSpecialAttackTime = GetWorld()->GetRealTimeSeconds();
@@ -445,6 +518,23 @@ void AInfomorphUE4Character::UnlockCamera()
 	bIsCameraLocked = false;
 	CameraTarget = nullptr;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
+}
+
+void AInfomorphUE4Character::Dedigitalize()
+{
+	AInfomorphPlayerController* InfomorphPC = Cast<AInfomorphPlayerController>(GetController());
+	if(InfomorphPC == nullptr)
+	{
+		//It's AI so call Destroy after dedigitalize
+		//Destroy();
+		GetWorldTimerManager().SetTimer(DedigitalizeTimerHandle, this, &AInfomorphUE4Character::DestroyActor, 3.0f);
+	}
+	else
+	{
+		//It's player so respawn after dedigitialize
+		//GetWorld()->ServerTravel("?reset");
+		GetWorldTimerManager().SetTimer(DedigitalizeTimerHandle, this, &AInfomorphUE4Character::RestartLevel, 3.0f);
+	}
 }
 
 float AInfomorphUE4Character::GetPossessionChance(const FVector& PlayerLocation)
