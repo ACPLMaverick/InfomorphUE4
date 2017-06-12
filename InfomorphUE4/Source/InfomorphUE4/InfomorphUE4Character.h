@@ -98,7 +98,10 @@ protected:
 	float LockedCameraTimer;
 	bool bIsCameraLocked;
 
+	class UMaterialInstanceDynamic* MaterialInstance;
+
 	FTimerHandle ConfusionTimerHandle;
+	FTimerHandle DedigitalizeTimerHandle;
 
 	FVector DodgeWorldDirection;
 
@@ -119,6 +122,9 @@ protected:
 	void ProcessCameraLocked(float DeltaSeconds);
 	void ConfusionEnd();
 
+	void DestroyActor();
+	void RestartLevel();
+
 	bool IsTargetVisible(const FVector& Direction) const;
 
 public:
@@ -128,6 +134,7 @@ public:
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void PossessedBy(AController* NewController) override;
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
+	virtual void FellOutOfWorld(const class UDamageType& DamageType) override;
 
 	virtual void StartBlock();
 	virtual void EndBlock();
@@ -140,6 +147,8 @@ public:
 	virtual void SpecialAbility();
 	virtual bool LockCameraOnTarget(AActor* Target);
 	virtual void UnlockCamera();
+
+	virtual void Dedigitalize();
 
 	float GetPossessionChance(const FVector& PlayerLocation);
 	void Confuse(float ConfusionTime, float Multiplier = 1.0f);
@@ -233,6 +242,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = Stats)
 		float GetRatioRemainingToActivateSpecialAttack() const
 	{
+		if(!IsValidLowLevel())
+		{
+			return 1.0f;
+		}
+
 		if(CharacterStats.SpecialAttackCooldown == 0.0f)
 		{
 			return 0.0f;
