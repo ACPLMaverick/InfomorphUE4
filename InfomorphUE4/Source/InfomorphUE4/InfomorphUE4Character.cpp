@@ -184,6 +184,9 @@ AInfomorphUE4Character::AInfomorphUE4Character()
 	bIsSpecialAttack = false;
 	bIsDodging = false;
 	bWasHit = false;
+
+	WeaponSocketName = "WeaponSocket";
+	ShieldSocketName = "ShieldSocket";
 }
 
 void AInfomorphUE4Character::BeginPlay()
@@ -194,6 +197,21 @@ void AInfomorphUE4Character::BeginPlay()
 	LastTimeTargetSeen = -CharacterStats.LooseTargetTimeout;
 	LastActionTime = -CharacterStats.EnergyRestoreCooldown;
 	LastSpecialAttackTime = -CharacterStats.SpecialAttackCooldown;
+
+	FAttachmentTransformRules AttachmentRules(EAttachmentRule::KeepWorld, false);
+
+	if(CurrentWeapon == nullptr)
+	{
+		CurrentWeapon = GetWorld()->SpawnActor<AInfomorphWeapon>(WeaponClass.Get());
+		CurrentWeapon->AttachToComponent((USceneComponent*)GetMesh(), AttachmentRules, WeaponSocketName);
+		CurrentWeapon->SetActorRelativeLocation(FVector::ZeroVector);
+		CurrentWeapon->SetActorRelativeRotation(FQuat::Identity);
+	}
+
+	AInfomorphShield* ShieldActor = GetWorld()->SpawnActor<AInfomorphShield>(ShieldClass.Get());
+	ShieldActor->AttachToComponent((USceneComponent*)GetMesh(), AttachmentRules, ShieldSocketName);
+	ShieldActor->SetActorRelativeLocation(FVector::ZeroVector);
+	ShieldActor->SetActorRelativeRotation(FQuat::Identity);
 
 	ResetState();
 }
@@ -358,6 +376,10 @@ void AInfomorphUE4Character::Attack()
 	CharacterStats.CurrentEnergy -= CharacterStats.LightAttackEnergyCost;
 	LastActionTime = GetWorld()->GetRealTimeSeconds();
 	bIsLightAttack = true;
+	if(CurrentWeapon != nullptr)
+	{
+		CurrentWeapon->SetDamage(CharacterStats.LightAttackDamage);
+	}
 }
 
 void AInfomorphUE4Character::HeavyAttack()
@@ -369,6 +391,10 @@ void AInfomorphUE4Character::HeavyAttack()
 	CharacterStats.CurrentEnergy -= CharacterStats.HeavyAttackEnergyCost;
 	LastActionTime = GetWorld()->GetRealTimeSeconds();
 	bIsHeavyAttack = true;
+	if(CurrentWeapon != nullptr)
+	{
+		CurrentWeapon->SetDamage(CharacterStats.HeavyAttackDamage);
+	}
 }
 
 void AInfomorphUE4Character::SpecialAttack()
@@ -387,6 +413,10 @@ void AInfomorphUE4Character::SpecialAttack()
 	CharacterStats.CurrentEnergy -= CharacterStats.SpecialAttackEnergyCost;
 	LastActionTime = GetWorld()->GetRealTimeSeconds();
 	bIsSpecialAttack = true;
+	if(CurrentWeapon != nullptr)
+	{
+		CurrentWeapon->SetDamage(CharacterStats.SpecialAttackDamage);
+	}
 }
 
 void AInfomorphUE4Character::SpecialAbility()
@@ -453,22 +483,18 @@ void AInfomorphUE4Character::Confuse(float ConfusionTime, float Multiplier)
 
 void AInfomorphUE4Character::EnableWeaponCollision()
 {
-	LogOnScreen("A MASZ!");
+	if(CurrentWeapon != nullptr)
+	{
+		CurrentWeapon->EnableCollision();
+	}
 }
 
 void AInfomorphUE4Character::DisableWeaponCollision()
 {
-	LogOnScreen("A JUZ NIE MASZ!");
-}
-
-void AInfomorphUE4Character::EnableFootCollision()
-{
-	LogOnScreen("A MASZ!");
-}
-
-void AInfomorphUE4Character::DisableFootCollision()
-{
-	LogOnScreen("A JUZ NIE MASZ!");
+	if(CurrentWeapon != nullptr)
+	{
+		CurrentWeapon->DisableCollision();
+	}
 }
 
 FVector AInfomorphUE4Character::GetEyesLocation() const
