@@ -4,6 +4,7 @@
 #include "InfomorphUE4.h"
 #include "InfomorphPlayerController.h"
 #include "InfomorphBaseAIController.h"
+#include "InfomorphUE4GameMode.h"
 #include "Kismet/HeadMountedDisplayFunctionLibrary.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -11,7 +12,10 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
-#include "Runtime/Engine/Classes/Components/ArrowComponent.h"
+#include "Components/ArrowComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Components/SphereComponent.h"
 
 FCharacterStats::FCharacterStats()
 {
@@ -54,7 +58,7 @@ void FCharacterStats::Initialize()
 
 void AInfomorphUE4Character::ProcessCameraLocked(float DeltaSeconds)
 {
-	LockedCameraTimer = FMath::Clamp(LockedCameraTimer + DeltaSeconds, 0.0f, 1.0f);
+	LockedCameraTimer += DeltaSeconds;
 
 	FVector Direction = CameraTarget->GetActorLocation() - GetEyesLocation();
 	
@@ -105,18 +109,77 @@ void AInfomorphUE4Character::ProcessCameraLocked(float DeltaSeconds)
 
 
 	FRotator CharacterRotation = GetActorRotation();
-	float TargetYaw = LookRotation.Yaw;
-	if(FMath::Abs(LookRotation.Yaw - CharacterRotation.Yaw) > 180.0f)
-	{
-		TargetYaw = CharacterRotation.Yaw + FMath::Sign(CharacterRotation.Yaw) * (180.0f - FMath::Abs(CharacterRotation.Yaw) + 180.0f - FMath::Abs(LookRotation.Yaw));
-	}
-	CharacterRotation.Yaw = FMath::Lerp(CharacterRotation.Yaw, TargetYaw, LockedCameraTimer);
+	CharacterRotation.Yaw = CalculateTargetYaw(CharacterRotation, LookRotation, LockedCameraTimer);
 	SetActorRotation(CharacterRotation);
+}
+
+void AInfomorphUE4Character::ProcessInteractionTarget(float DeltaSeconds)
+{
+	FVector Difference = InteractionTarget->GetComponentLocation() - GetActorLocation();
+	Difference.Z = 0.0f;
+	float DifferenceSize = Difference.Size();
+
+	if(DifferenceSize < 30.0f)
+	{
+		if(InteractionRotateToTargetLerpTime == 0.0f)
+		{
+			AInfomorphPlayerController* InfomorphPC = Cast<AInfomorphPlayerController>(GetController());
+			if(InfomorphPC != nullptr)
+			{
+				InfomorphPC->InteractWithCurrentInteractable();
+			}
+			InteractionTarget = nullptr;
+			
+			return;
+		}
+
+		InteractionRotateToTargetTimer += DeltaSeconds;
+
+		FRotator CharacterRotation = GetActorRotation();
+		CharacterRotation.Yaw = CalculateTargetYaw(CharacterRotation, InteractionTarget->GetForwardVector().Rotation(), InteractionRotateToTargetTimer / InteractionRotateToTargetLerpTime);
+		SetActorRotation(CharacterRotation);
+
+		if(FMath::Abs(CharacterRotation.Yaw - InteractionTarget->GetForwardVector().Rotation().Yaw) < 3.0f)
+		{
+			AInfomorphPlayerController* InfomorphPC = Cast<AInfomorphPlayerController>(GetController());
+			if(InfomorphPC != nullptr)
+			{
+				InfomorphPC->InteractWithCurrentInteractable();
+			}
+			InteractionTarget = nullptr;
+		}
+
+		return;
+	}
+
+	InteractionTargetSetTimer += DeltaSeconds;
+
+	if(InteractionMoveToTargetLerpTime == 0.0f)
+	{
+		return;
+	}
+
+	FRotator CharacterRotation = GetActorRotation();
+	CharacterRotation.Yaw = CalculateTargetYaw(CharacterRotation, Difference.Rotation(), InteractionTargetSetTimer / InteractionMoveToTargetLerpTime);
+	SetActorRotation(CharacterRotation);
+
+	FVector Direction = FRotationMatrix(FRotator(0.0f, CharacterRotation.Yaw, 0.0f)).GetUnitAxis(EAxis::X);
+	AddMovementInput(Direction);
 }
 
 void AInfomorphUE4Character::ConfusionEnd()
 {
 	CharacterStats.bIsConfused = false;
+}
+
+void AInfomorphUE4Character::DestroyActor()
+{
+	Destroy();
+}
+
+void AInfomorphUE4Character::RestartLevel()
+{
+	GetWorld()->ServerTravel("?reset");
 }
 
 bool AInfomorphUE4Character::IsTargetVisible(const FVector& Direction) const
@@ -139,6 +202,16 @@ bool AInfomorphUE4Character::IsTargetVisible(const FVector& Direction) const
 	bool bWasHit = World->LineTraceSingleByObjectType(Hit, GetEyesLocation(), GetEyesLocation() + Direction * CharacterStats.SightRange, ObjectQueryParams, TraceParams);
 
 	return Hit.GetActor() != nullptr && Hit.GetActor()->IsA<AInfomorphUE4Character>();
+}
+
+float AInfomorphUE4Character::CalculateTargetYaw(const FRotator& CurrentRotation, const FRotator& TargetRotation, float LerpT) const
+{
+	float TargetYaw = TargetRotation.Yaw;
+	if(FMath::Abs(TargetYaw - CurrentRotation.Yaw) > 180.0f)
+	{
+		TargetYaw = CurrentRotation.Yaw + FMath::Sign(CurrentRotation.Yaw) * (180.0f - FMath::Abs(CurrentRotation.Yaw) + 180.0f - FMath::Abs(TargetYaw));
+	}
+	return FMath::Lerp(CurrentRotation.Yaw, TargetYaw, FMath::Clamp(LerpT, 0.0f, 1.0f));
 }
 
 AInfomorphUE4Character::AInfomorphUE4Character()
@@ -173,6 +246,11 @@ AInfomorphUE4Character::AInfomorphUE4Character()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
+	InteractionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("InteractionSphere"));
+	InteractionSphere->SetupAttachment(RootComponent);
+	InteractionSphere->SetSphereRadius(400.0f);
+	InteractionSphere->bGenerateOverlapEvents = true;
+
 	bIsInStealthMode = false;
 
 	CameraTarget = nullptr;
@@ -192,6 +270,13 @@ AInfomorphUE4Character::AInfomorphUE4Character()
 void AInfomorphUE4Character::BeginPlay()
 {
 	Super::BeginPlay();
+	MaterialInstance = UMaterialInstanceDynamic::Create(GetMesh()->GetMaterial(0), GetMesh());
+
+	if(MaterialInstance != nullptr)
+	{
+		MaterialInstance->SetScalarParameterValue("PossessedMultiplier", 0.0f);
+		GetMesh()->SetMaterial(0, MaterialInstance);
+	}
 
 	CharacterStats.Initialize();
 	LastTimeTargetSeen = -CharacterStats.LooseTargetTimeout;
@@ -222,12 +307,40 @@ void AInfomorphUE4Character::Tick(float DeltaSeconds)
 
 	if(GetWorld()->GetRealTimeSeconds() - LastActionTime > CharacterStats.EnergyRestoreCooldown)
 	{
-		CharacterStats.CurrentEnergy = FMath::Clamp(CharacterStats.CurrentEnergy + CharacterStats.EnergyRecoveryPerSecond * DeltaSeconds, 0.0f, CharacterStats.BaseEnergy);
+		float Multiplier = 1.0f;
+		if(IsBlocking())
+		{
+			Multiplier = 0.5f;
+		}
+
+		CharacterStats.CurrentEnergy += CharacterStats.EnergyRecoveryPerSecond * DeltaSeconds * Multiplier;
+		CharacterStats.CurrentEnergy = FMath::Clamp(CharacterStats.CurrentEnergy, 0.0f, CharacterStats.BaseEnergy);
+	}
+
+	if(InteractionTarget != nullptr)
+	{
+		ProcessInteractionTarget(DeltaSeconds);
+	}
+
+	float CurrentMultiplier = 0.0f;
+	if(MaterialInstance != nullptr)
+	{
+		MaterialInstance->GetScalarParameterValue("PossessedMultiplier", CurrentMultiplier);
 	}
 
 	if(Controller != nullptr && Controller->IsA<AInfomorphPlayerController>())
 	{
 		LogOnScreen(12345, FColor::Green, FString::Printf(TEXT("Consciousness: %.3f, Energy: %.3f"), CharacterStats.CurrentConsciousness, CharacterStats.CurrentEnergy));
+		CurrentMultiplier += DeltaSeconds;
+	}
+	else
+	{
+		CurrentMultiplier -= DeltaSeconds;
+	}
+
+	if(MaterialInstance != nullptr)
+	{
+		MaterialInstance->SetScalarParameterValue("PossessedMultiplier", FMath::Clamp(CurrentMultiplier, 0.0f, 1.0f));
 	}
 
 	if(bIsDodging)
@@ -301,6 +414,15 @@ float AInfomorphUE4Character::TakeDamage(float DamageAmount, FDamageEvent const&
 	return ActualDamage;
 }
 
+void AInfomorphUE4Character::FellOutOfWorld(const UDamageType& DamageType)
+{
+	if(!IsDead())
+	{
+		Dedigitalize();
+	}
+	CharacterStats.CurrentConsciousness = 0.0f;
+}
+
 void AInfomorphUE4Character::StartBlock()
 {
 	bIsBlocking = true;
@@ -327,6 +449,12 @@ void AInfomorphUE4Character::Dodge(const FVector& DodgeDirection)
 	{
 		return;
 	}
+
+	if(IsBlocking())
+	{
+		EndBlock();
+	}
+
 	CharacterStats.CurrentEnergy -= CharacterStats.DodgeEnergyCost;
 	LastActionTime = GetWorld()->GetRealTimeSeconds();
 	bIsDodging = true;
@@ -373,6 +501,11 @@ void AInfomorphUE4Character::Attack()
 	{
 		return;
 	}
+
+	if(IsBlocking())
+	{
+		EndBlock();
+	}
 	CharacterStats.CurrentEnergy -= CharacterStats.LightAttackEnergyCost;
 	LastActionTime = GetWorld()->GetRealTimeSeconds();
 	bIsLightAttack = true;
@@ -387,6 +520,11 @@ void AInfomorphUE4Character::HeavyAttack()
 	if(CharacterStats.CurrentEnergy - CharacterStats.HeavyAttackEnergyCost < 0.0f)
 	{
 		return;
+	}
+
+	if(IsBlocking())
+	{
+		EndBlock();
 	}
 	CharacterStats.CurrentEnergy -= CharacterStats.HeavyAttackEnergyCost;
 	LastActionTime = GetWorld()->GetRealTimeSeconds();
@@ -406,6 +544,11 @@ void AInfomorphUE4Character::SpecialAttack()
 	if(GetWorld()->GetRealTimeSeconds() - LastSpecialAttackTime <= CharacterStats.SpecialAttackCooldown)
 	{
 		return;
+	}
+
+	if(IsBlocking())
+	{
+		EndBlock();
 	}
 
 	LastSpecialAttackTime = GetWorld()->GetRealTimeSeconds();
@@ -447,6 +590,23 @@ void AInfomorphUE4Character::UnlockCamera()
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 }
 
+void AInfomorphUE4Character::Dedigitalize()
+{
+	AInfomorphPlayerController* InfomorphPC = Cast<AInfomorphPlayerController>(GetController());
+	if(InfomorphPC == nullptr)
+	{
+		//It's AI so call Destroy after dedigitalize
+		//Destroy();
+		GetWorldTimerManager().SetTimer(DedigitalizeTimerHandle, this, &AInfomorphUE4Character::DestroyActor, 3.0f);
+	}
+	else
+	{
+		//It's player so respawn after dedigitialize
+		//GetWorld()->ServerTravel("?reset");
+		GetWorldTimerManager().SetTimer(DedigitalizeTimerHandle, this, &AInfomorphUE4Character::RestartLevel, 3.0f);
+	}
+}
+
 float AInfomorphUE4Character::GetPossessionChance(const FVector& PlayerLocation)
 {
 	AInfomorphBaseAIController* InfomorphAIController = Cast<AInfomorphBaseAIController>(GetController());
@@ -479,6 +639,27 @@ void AInfomorphUE4Character::Confuse(float ConfusionTime, float Multiplier)
 {
 	CharacterStats.bIsConfused = true;
 	GetWorldTimerManager().SetTimer(ConfusionTimerHandle, this, &AInfomorphUE4Character::ConfusionEnd, ConfusionTime * Multiplier);
+}
+
+void AInfomorphUE4Character::SetInteractionTarget(USceneComponent* NewInteractionTarget)
+{
+	InteractionTarget = NewInteractionTarget;
+	InteractionTargetSetTimer = 0.0f;
+	InteractionRotateToTargetTimer = 0.0f;
+
+	if(NewInteractionTarget != nullptr)
+	{
+		FVector Difference = NewInteractionTarget->GetComponentLocation() - GetActorLocation();
+		Difference.Z = 0.0f;
+
+		float TargetMoveYaw = CalculateTargetYaw(GetActorRotation(), Difference.Rotation(), 1.0f);
+		float YawDifference = TargetMoveYaw - GetActorRotation().Yaw;
+		InteractionMoveToTargetLerpTime = FMath::Abs(YawDifference) / 60.0f;
+
+		float TargetRotateYaw = CalculateTargetYaw(FRotator(0.0f, TargetMoveYaw, 0.0f), NewInteractionTarget->GetForwardVector().Rotation(), 1.0f);
+		YawDifference = TargetRotateYaw - (GetActorRotation().Yaw + YawDifference);
+		InteractionRotateToTargetLerpTime = FMath::Abs(YawDifference) / 60.0f;
+	}
 }
 
 void AInfomorphUE4Character::EnableWeaponCollision()

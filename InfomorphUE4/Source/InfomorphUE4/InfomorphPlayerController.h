@@ -5,6 +5,7 @@
 #include "Core.h"
 #include "GameFramework/PlayerController.h"
 #include "InfomorphSkillBase.h"
+#include "InfomorphInteractable.h"
 #include "Runtime/Engine/Classes/Components/ForceFeedbackComponent.h"
 #include "InfomorphPlayerController.generated.h"
 
@@ -27,6 +28,8 @@ protected:
 		float LookTimerThreshold;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Skills)
 		TArray<FSkillInfo> Skills;
+
+	AInfomorphInteractable* CurrentInteractable;
 
 	float LastLookedTimer;
 	float LastMovedTimer;
@@ -62,6 +65,8 @@ protected:
 
 	AActor* GetActorInLookDirection(const FVector& EyesLocation, const FVector &Direction, float MaxDistance) const;
 
+	void LookForInteractables(float DeltaSeconds);
+
 public:
 	AInfomorphPlayerController();
 	AInfomorphPlayerController(const FObjectInitializer& ObjectInitializer);
@@ -72,6 +77,8 @@ public:
 	virtual void Tick(float DeltaSeconds) override;
 
 	void PossessNewCharacter(class AInfomorphUE4Character* NewCharacter);
+
+	void InteractWithCurrentInteractable();
 
 	UFUNCTION(BlueprintCallable, Category = Noise)
 		void MakeFootstepNoise();
@@ -125,6 +132,12 @@ public:
 	FORCEINLINE bool IsUsingSkill() const
 	{
 		return Skills.IsValidIndex(CurrentSelectedSkillIndex) && Skills[CurrentSelectedSkillIndex].Skill != nullptr && Skills[CurrentSelectedSkillIndex].Skill->IsBeingUsed();
+	}
+
+	UFUNCTION(BlueprintCallable, Category = Interaction)
+		FORCEINLINE bool IsInteractionPossible() const
+	{
+		return CurrentInteractable != nullptr && CurrentInteractable->IsInteractionPossible();
 	}
 
 	//Returns float from 0 to 1, where 1 means that whole cooldown remains and 0 means that skill is ready
