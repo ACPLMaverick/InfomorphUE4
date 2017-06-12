@@ -7,7 +7,7 @@
 
 AInfomorphInteractable::AInfomorphInteractable() : Super()
 {
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = true; 
 }
 
 AInfomorphInteractable::AInfomorphInteractable(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)

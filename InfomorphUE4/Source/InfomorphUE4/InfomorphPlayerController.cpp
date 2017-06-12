@@ -433,7 +433,7 @@ AActor* AInfomorphPlayerController::GetActorInLookDirection(const FVector& EyesL
 	return HitActor;
 }
 
-void AInfomorphPlayerController::LookForInteractables()
+void AInfomorphPlayerController::LookForInteractables(float DeltaSeconds)
 {
 	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
 	if(PossessedCharacter == nullptr)
@@ -441,43 +441,37 @@ void AInfomorphPlayerController::LookForInteractables()
 		return;
 	}
 
+	CurrentInteractable = nullptr;
 	TArray<AActor*> InteractablesInRange;
 
 	PossessedCharacter->GetInteractionSphere()->GetOverlappingActors(InteractablesInRange);
 
 	int32 InteractablesNum = InteractablesInRange.Num();
-	if(InteractablesNum == 0)
-	{
-		CurrentInteractable = nullptr;
-	}
-	else
-	{
-		static const float MaxAngle = 60.0f;
-		float MinAngle = MaxAngle;
+	static const float MaxAngle = 60.0f;
+	float MinAngle = MaxAngle;
 
-		for(int32 i = 0; i < InteractablesNum; ++i)
+	for(int32 i = 0; i < InteractablesNum; ++i)
+	{
+		AInfomorphInteractable* Interactable = Cast<AInfomorphInteractable>(InteractablesInRange[i]);
+		if(Interactable == nullptr)
 		{
-			AInfomorphInteractable* Interactable = Cast<AInfomorphInteractable>(InteractablesInRange[i]);
-			if(Interactable == nullptr)
-			{
-				continue;
-			}
+			continue;
+		}
 
-			FVector CameraToInteractable = Interactable->GetActorLocation() - PossessedCharacter->GetEyesLocation();
-			CameraToInteractable.Normalize();
-			float Dot = FVector::DotProduct(CameraToInteractable, PossessedCharacter->GetEyesDirection());
-			float Angle = FMath::Acos(Dot);
-			if(Angle < MaxAngle && Angle < MinAngle)
-			{
-				MinAngle = Angle;
-				CurrentInteractable = Interactable;
-			}
+		FVector CameraToInteractable = Interactable->GetActorLocation() - PossessedCharacter->GetEyesLocation();
+		CameraToInteractable.Normalize();
+		float Dot = FVector::DotProduct(CameraToInteractable, PossessedCharacter->GetEyesDirection());
+		float Angle = FMath::Acos(Dot);
+		if(Angle < MaxAngle && Angle < MinAngle)
+		{
+			MinAngle = Angle;
+			CurrentInteractable = Interactable;
 		}
 	}
 
 	if(CurrentInteractable != nullptr)
 	{
-		LogOnScreen(21, FColor::Cyan, FString("CurrentInteractable: ").Append(CurrentInteractable->GetName()));
+		LogOnScreen(21, DeltaSeconds, FColor::Cyan, FString("CurrentInteractable: ").Append(CurrentInteractable->GetName()));
 	}
 }
 
@@ -588,7 +582,7 @@ void AInfomorphPlayerController::Tick(float DeltaSeconds)
 
 	if(PossessedCharacter != nullptr && !PossessedCharacter->IsDead())
 	{
-		LookForInteractables();
+		LookForInteractables(DeltaSeconds);
 	}
 	else
 	{

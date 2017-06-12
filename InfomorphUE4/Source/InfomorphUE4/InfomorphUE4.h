@@ -2,6 +2,8 @@
 
 #pragma once
 
+#define BOOL_TO_TCHAR(boolValue) ((boolValue) ? TEXT("True") : TEXT("False"))
+
 #include "Core.h"
 
 void LogOnScreen(const FString& Message);

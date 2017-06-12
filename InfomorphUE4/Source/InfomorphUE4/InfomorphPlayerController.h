@@ -65,7 +65,7 @@ protected:
 
 	AActor* GetActorInLookDirection(const FVector& EyesLocation, const FVector &Direction, float MaxDistance) const;
 
-	void LookForInteractables();
+	void LookForInteractables(float DeltaSeconds);
 
 public:
 	AInfomorphPlayerController();

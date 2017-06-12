@@ -16,8 +16,8 @@ class INFOMORPHUE4_API AInfomorphInteractableDoors : public AInfomorphInteractab
 	GENERATED_BODY()
 	
 protected:
-	//UPROPERTY(EditAnywhere, Category = Doors)
-	//	UBoxComponent* DoorsOverlapVolume;
+	UPROPERTY(EditAnywhere, Category = Doors)
+		UBoxComponent* DoorsNotCloseVolume;
 	UPROPERTY(EditAnywhere, Category = Doors)
 		USceneComponent* LeftWingsRoot;
 	UPROPERTY(EditAnywhere, Category = Doors)
@@ -36,19 +36,35 @@ protected:
 		float OpeningSpeed;
 	UPROPERTY(EditAnywhere, Category = Doors)
 		float OpenAngle;
+	UPROPERTY(EditAnywhere, Category = Doors)
+		float AutoCloseCooldown;
 
 	FRotator LeftWingsClosedRotation;
 	FRotator RightWingsClosedRotation;
 	FRotator LeftWingsOpenedRotation;
 	FRotator RightWingsOpenedRotation;
 	float OpeningTime;
+	float ClosingTime;
+
+	float LastTimePlayerWasIn;
 
 	bool bAreOpening;
 	bool bAreOpened;
+	bool bAreClosing;
+	bool bAreClosed;
+
+	bool bIsPlayerIn;
+
+protected:
+	UFUNCTION()
+		void OnNotCloseVolumeBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	UFUNCTION()
+		void OnNotCloseVolumeEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 public:
 	AInfomorphInteractableDoors(const FObjectInitializer& ObjectInitializer);
 
+	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 
 	virtual bool IsInteractionPossible() const override;
