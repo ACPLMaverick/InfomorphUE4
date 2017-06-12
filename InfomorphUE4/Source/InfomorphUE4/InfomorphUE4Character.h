@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "InfomorphWeapon.h"
+#include "InfomorphShield.h"
 #include "InfomorphUE4Character.generated.h"
 
 USTRUCT()
@@ -76,10 +78,21 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class UCameraComponent* FollowCamera;
 
+	UPROPERTY(EditAnywhere, Category = Weapon)
+		TSubclassOf<AInfomorphWeapon> WeaponClass;
+
+	UPROPERTY(EditAnywhere, Category = Shield)
+		TSubclassOf<AInfomorphShield> ShieldClass;
+
+	UPROPERTY(EditAnywhere, Category = Weapon)
+		FName WeaponSocketName;
+	UPROPERTY(EditAnywhere, Category = Weapon)
+		FName ShieldSocketName;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stats)
 		FCharacterStats CharacterStats;
 
-	bool bIsInStealthMode;
+	AInfomorphWeapon* CurrentWeapon;
 
 	AActor* CameraTarget;
 	float LockedCameraTimer;
@@ -93,6 +106,7 @@ protected:
 	float LastActionTime;
 	float LastSpecialAttackTime;
 
+	bool bIsInStealthMode;
 	bool bIsLightAttack;
 	bool bIsHeavyAttack;
 	bool bIsSpecialAttack;
@@ -134,10 +148,6 @@ public:
 		void EnableWeaponCollision();
 	UFUNCTION(BlueprintCallable, Category = Attack)
 		void DisableWeaponCollision();
-	UFUNCTION(BlueprintCallable, Category = Attack)
-		void EnableFootCollision();
-	UFUNCTION(BlueprintCallable, Category = Attack)
-		void DisableFootCollision();
 
 	UFUNCTION(BlueprintCallable, Category = Movement)
 		FORCEINLINE bool IsInStealthMode() const { return bIsInStealthMode; }
