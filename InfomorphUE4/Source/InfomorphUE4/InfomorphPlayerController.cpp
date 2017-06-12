@@ -501,6 +501,15 @@ void AInfomorphPlayerController::Tick(float DeltaSeconds)
 	}
 	
 	FColor LogColor = FColor::Yellow;
+
+	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
+	if(PossessedCharacter != nullptr && PossessedCharacter->GetRatioRemainingToActivateSpecialAttack() > 0.0f)
+	{
+		LogColor = FColor(125, 125, 125, 255);
+	}
+	LogOnScreen(2, LogColor, FString::Printf(TEXT("Special attack, ratio: %.4f"), PossessedCharacter->GetRatioRemainingToActivateSpecialAttack()));
+
+	LogColor = FColor::Yellow;
 	if(!Skills[CurrentSelectedSkillIndex].Skill->CanBeUsed())
 	{
 		LogColor = FColor(125, 125, 125, 255);

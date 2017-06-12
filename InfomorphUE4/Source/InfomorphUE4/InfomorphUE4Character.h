@@ -197,16 +197,60 @@ public:
 		bIsBlocking = false;
 	}
 
+	UFUNCTION(BlueprintCallable, Category = Stats)
+		void ResetState()
+	{
+		bIsLightAttack =
+			bIsHeavyAttack =
+			bIsSpecialAttack =
+			bIsDodging =
+			bIsDodgingZeroInput =
+			bWasHit =
+			bIsBlocking = false;
+	}
+
 	UFUNCTION(BlueprintCallable, Category = Camera)
 		FVector GetEyesLocation() const;
 
 	UFUNCTION(BlueprintCallable, Category = Camera)
 		FVector GetEyesDirection() const;
 
-	UFUNCTION(BlueprintCallable, Category = Info)
+	UFUNCTION(BlueprintCallable, Category = Senses)
 		float GetSightRange() const { return CharacterStats.SightRange; }
-	UFUNCTION(BlueprintCallable, Category = Info)
+	UFUNCTION(BlueprintCallable, Category = Senses)
 		float GetHearRange() const { return CharacterStats.HearRange; }
+	//Returns 0 if special attack is ready and 1 if time remaining to activate special attack is equal to SpecialAttackCooldown specified in CharacterStats struct
+	UFUNCTION(BlueprintCallable, Category = Stats)
+		float GetRatioRemainingToActivateSpecialAttack() const
+	{
+		if(CharacterStats.SpecialAttackCooldown == 0.0f)
+		{
+			return 0.0f;
+		}
+		float Ratio = 1.0f - (GetWorld()->GetRealTimeSeconds() - LastSpecialAttackTime) / CharacterStats.SpecialAttackCooldown;
+		return FMath::Clamp(Ratio, 0.0f, 1.0f);
+	}
+
+	UFUNCTION(BlueprintCallable, Category = Stats)
+		FORCEINLINE float GetCurrentConsciousness() const
+	{
+		return CharacterStats.CurrentConsciousness;
+	}
+	UFUNCTION(BlueprintCallable, Category = Stats)
+		FORCEINLINE float GetCurrentEnergy() const
+	{
+		return CharacterStats.CurrentEnergy;
+	}
+	UFUNCTION(BlueprintCallable, Category = Stats)
+		FORCEINLINE float GetMaxConsciousness() const
+	{
+		return CharacterStats.BaseConsciousness;
+	}
+	UFUNCTION(BlueprintCallable, Category = Stats)
+		FORCEINLINE float GetMaxEnergy() const
+	{
+		return CharacterStats.BaseEnergy;
+	}
 
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }

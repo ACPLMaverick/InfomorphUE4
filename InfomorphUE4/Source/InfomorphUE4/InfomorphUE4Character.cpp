@@ -195,13 +195,7 @@ void AInfomorphUE4Character::BeginPlay()
 	LastActionTime = -CharacterStats.EnergyRestoreCooldown;
 	LastSpecialAttackTime = -CharacterStats.SpecialAttackCooldown;
 
-	bIsLightAttack = 
-		bIsHeavyAttack = 
-		bIsSpecialAttack = 
-		bIsDodging = 
-		bIsDodgingZeroInput = 
-		bWasHit = 
-		bIsBlocking = false;
+	ResetState();
 }
 
 void AInfomorphUE4Character::Tick(float DeltaSeconds)
@@ -254,6 +248,7 @@ void AInfomorphUE4Character::PossessedBy(AController* NewController)
 		if(AIController != nullptr)
 		{
 			Confuse(CharacterStats.ConfusionUnpossessedTime);
+			ResetState();
 		}
 	}
 }
@@ -291,11 +286,21 @@ float AInfomorphUE4Character::TakeDamage(float DamageAmount, FDamageEvent const&
 void AInfomorphUE4Character::StartBlock()
 {
 	bIsBlocking = true;
+	AInfomorphPlayerController* InfomorphPC = Cast<AInfomorphPlayerController>(GetController());
+	if(InfomorphPC != nullptr)
+	{
+		InfomorphPC->SetMovementMultiplier(0.5f);
+	}
 }
 
 void AInfomorphUE4Character::EndBlock()
 {
 	bIsBlocking = false;
+	AInfomorphPlayerController* InfomorphPC = Cast<AInfomorphPlayerController>(GetController());
+	if(InfomorphPC != nullptr)
+	{
+		InfomorphPC->ResetMovementMultiplier();
+	}
 }
 
 void AInfomorphUE4Character::Dodge(const FVector& DodgeDirection)
