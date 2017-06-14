@@ -112,7 +112,6 @@ void AInfomorphInteractableDoors::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	LogOnScreen(123, FColor::Magenta, FString::Printf(TEXT("bAreOpening: %s, bAreOpened: %s, bAreClosing: %s, bAreClosed: %s"), BOOL_TO_TCHAR(bAreOpening), BOOL_TO_TCHAR(bAreOpened), BOOL_TO_TCHAR(bAreClosing), BOOL_TO_TCHAR(bAreClosed)));
 	if(bAreOpening)
 	{
 		OpeningTime += DeltaSeconds * OpeningSpeed;
