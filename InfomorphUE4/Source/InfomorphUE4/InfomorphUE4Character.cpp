@@ -16,6 +16,7 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/SphereComponent.h"
+#include "Components/PointLightComponent.h"
 
 FCharacterStats::FCharacterStats()
 {
@@ -258,6 +259,10 @@ AInfomorphUE4Character::AInfomorphUE4Character()
 	InteractionSphere->SetSphereRadius(400.0f);
 	InteractionSphere->bGenerateOverlapEvents = true;
 
+	Light = CreateDefaultSubobject<UPointLightComponent>(TEXT("Light"));
+	Light->SetupAttachment(RootComponent);
+	Light->CastShadows = 0;
+
 	bIsInStealthMode = false;
 
 	CameraTarget = nullptr;
@@ -359,6 +364,12 @@ void AInfomorphUE4Character::Tick(float DeltaSeconds)
 		GetCharacterMovement()->bOrientRotationToMovement = !IsCameraLocked();
 	}
 
+	if(PrepareAttackTime > 0.0f)
+	{
+		PrepareAttackTime -= DeltaSeconds;
+		AddMovementInput(BeforeAttackDirection, PrepareAttackTime * 2.0f);
+	}
+
 	if(bIsCameraLocked && CameraTarget != nullptr)
 	{
 		ProcessCameraLocked(DeltaSeconds);
@@ -380,6 +391,7 @@ void AInfomorphUE4Character::PossessedBy(AController* NewController)
 		Confuse(CharacterStats.ConfusionPossessedTime);
 		InteractionSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		InteractionSphere->bGenerateOverlapEvents = true;
+		Light->SetVisibility(true);
 	}
 	else
 	{
@@ -391,6 +403,7 @@ void AInfomorphUE4Character::PossessedBy(AController* NewController)
 			InteractionSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 			InteractionSphere->bGenerateOverlapEvents = false;
 			ResetState();
+			Light->SetVisibility(false);
 		}
 	}
 }
@@ -524,6 +537,12 @@ void AInfomorphUE4Character::Attack()
 	{
 		CurrentWeapon->SetDamage(CharacterStats.LightAttackDamage);
 	}
+	BeforeAttackDirection = GetCharacterMovement()->Velocity;
+	if(BeforeAttackDirection.Size() > 0.0f)
+	{
+		BeforeAttackDirection.Normalize();
+		PrepareAttackTime = 0.5f;
+	}
 }
 
 void AInfomorphUE4Character::HeavyAttack()
@@ -543,6 +562,12 @@ void AInfomorphUE4Character::HeavyAttack()
 	if(CurrentWeapon != nullptr)
 	{
 		CurrentWeapon->SetDamage(CharacterStats.HeavyAttackDamage);
+	}
+	BeforeAttackDirection = GetCharacterMovement()->Velocity;
+	if(BeforeAttackDirection.Size() > 0.0f)
+	{
+		BeforeAttackDirection.Normalize();
+		PrepareAttackTime = 0.5f;
 	}
 }
 
@@ -570,6 +595,12 @@ void AInfomorphUE4Character::SpecialAttack()
 	if(CurrentWeapon != nullptr)
 	{
 		CurrentWeapon->SetDamage(CharacterStats.SpecialAttackDamage);
+	}
+	BeforeAttackDirection = GetCharacterMovement()->Velocity;
+	if(BeforeAttackDirection.Size() > 0.0f)
+	{
+		BeforeAttackDirection.Normalize();
+		PrepareAttackTime = 0.5f;
 	}
 }
 
