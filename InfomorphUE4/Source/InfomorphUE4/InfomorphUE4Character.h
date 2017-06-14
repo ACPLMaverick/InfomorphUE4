@@ -70,23 +70,21 @@ class AInfomorphUE4Character : public ACharacter
 	GENERATED_BODY()
 
 protected:
-	/** Camera boom positioning the camera behind the character */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	class USpringArmComponent* CameraBoom;
-
-	/** Follow camera */
+		class USpringArmComponent* CameraBoom;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	class UCameraComponent* FollowCamera;
+		class UCameraComponent* FollowCamera;
+	
+	UPROPERTY(EditAnywhere, Category = Light)
+		class UPointLightComponent* Light;
 
 	UPROPERTY(EditAnywhere, Category = Interaction)
 		class USphereComponent* InteractionSphere;
 
 	UPROPERTY(EditAnywhere, Category = Weapon)
 		TSubclassOf<AInfomorphWeapon> WeaponClass;
-
 	UPROPERTY(EditAnywhere, Category = Shield)
 		TSubclassOf<AInfomorphShield> ShieldClass;
-
 	UPROPERTY(EditAnywhere, Category = Weapon)
 		FName WeaponSocketName;
 	UPROPERTY(EditAnywhere, Category = Weapon)
@@ -113,10 +111,12 @@ protected:
 	FTimerHandle DedigitalizeTimerHandle;
 
 	FVector DodgeWorldDirection;
+	FVector BeforeAttackDirection;
 
 	float LastTimeTargetSeen;
 	float LastActionTime;
 	float LastSpecialAttackTime;
+	float PrepareAttackTime;
 
 	bool bIsInStealthMode;
 	bool bIsLightAttack;
@@ -187,6 +187,8 @@ public:
 		FORCEINLINE bool IsHeavyAttack() const { return bIsHeavyAttack; }
 	UFUNCTION(BlueprintCallable, Category = Attack)
 		FORCEINLINE bool IsSpecialAttack() const { return bIsSpecialAttack; }
+	UFUNCTION(BlueprintCallable, Category = Attack)
+		FORCEINLINE bool IsPreparingAttack() const { return PrepareAttackTime > 0.0f; }
 	UFUNCTION(BlueprintCallable, Category = Damage)
 		FORCEINLINE bool WasHit() const { return bWasHit; }
 	UFUNCTION(BlueprintCallable, Category = Dodge)
@@ -209,6 +211,7 @@ public:
 		bIsLightAttack = false;
 		bIsHeavyAttack = false;
 		bIsSpecialAttack = false;
+		PrepareAttackTime = 0.0f;
 	}
 
 	UFUNCTION(BlueprintCallable, Category = Damage) 

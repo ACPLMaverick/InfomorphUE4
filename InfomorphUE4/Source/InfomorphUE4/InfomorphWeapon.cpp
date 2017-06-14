@@ -17,7 +17,7 @@ AInfomorphWeapon::AInfomorphWeapon(const FObjectInitializer& ObjectInitializer) 
 	}
 
 	WeaponMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WeaponMesh"));
-	WeaponMesh->AttachTo(RootComponent);
+	WeaponMesh->SetupAttachment(RootComponent);
 	WeaponMesh->bGenerateOverlapEvents = true;
 	WeaponMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Overlap);
 	WeaponMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
