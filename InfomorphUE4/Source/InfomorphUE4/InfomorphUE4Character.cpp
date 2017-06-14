@@ -60,6 +60,13 @@ void AInfomorphUE4Character::ProcessCameraLocked(float DeltaSeconds)
 {
 	LockedCameraTimer += DeltaSeconds;
 
+	AInfomorphUE4Character* TargetCharacter = Cast<AInfomorphUE4Character>(CameraTarget);
+	if((TargetCharacter != nullptr && TargetCharacter->IsDead()) || IsDead())
+	{
+		UnlockCamera();
+		return;
+	}
+
 	FVector Direction = CameraTarget->GetActorLocation() - GetEyesLocation();
 	
 	if(Direction.Size() > CharacterStats.SightRange)
@@ -371,6 +378,8 @@ void AInfomorphUE4Character::PossessedBy(AController* NewController)
 	if(InfomorphPC != nullptr)
 	{
 		Confuse(CharacterStats.ConfusionPossessedTime);
+		InteractionSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		InteractionSphere->bGenerateOverlapEvents = true;
 	}
 	else
 	{
@@ -379,6 +388,8 @@ void AInfomorphUE4Character::PossessedBy(AController* NewController)
 		if(AIController != nullptr)
 		{
 			Confuse(CharacterStats.ConfusionUnpossessedTime);
+			InteractionSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			InteractionSphere->bGenerateOverlapEvents = false;
 			ResetState();
 		}
 	}
