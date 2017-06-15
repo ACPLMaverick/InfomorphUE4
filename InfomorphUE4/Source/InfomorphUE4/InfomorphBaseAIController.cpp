@@ -104,6 +104,8 @@ void AInfomorphBaseAIController::Possess(APawn* InPawn)
 				Blackboard->InitializeBlackboard(*(InfomorphCharacter->BehaviorTree->BlackboardAsset));
 			}
 			((UBehaviorTreeComponent*)BrainComponent)->StartTree(*(InfomorphCharacter->BehaviorTree));
+
+			Blackboard->SetValueAsObject("SelfActor", InfomorphCharacter);
 		}
 	}
 }
@@ -116,6 +118,8 @@ void AInfomorphBaseAIController::Tick(float DeltaSeconds)
 	{
 		BrainComponent->StopLogic("Death");
 	}
+
+	Blackboard->SetValueAsVector("InitialLocation", InfomorphCharacter->GetInitialLocation());
 }
 
 void AInfomorphBaseAIController::PauseBehaviorTree(const FString& Reason)

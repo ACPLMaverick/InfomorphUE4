@@ -29,22 +29,26 @@ public:
 	virtual void StartUsing(class AInfomorphPlayerController* InfomorphPlayerController);
 	virtual void StopUsing();
 
-	FORCEINLINE virtual bool IsBeingUsed() const
+	UFUNCTION(BlueprintCallable, Category = Skill)
+	virtual FORCEINLINE bool IsBeingUsed() const
 	{
 		return false;
 	}
 
-	FORCEINLINE virtual bool CanBeUsed() const
+	UFUNCTION(BlueprintCallable, Category = Skill)
+	virtual FORCEINLINE bool CanBeUsed() const
 	{
 		float CurrentRealSeconds = FPlatformTime::Seconds();
 		return CurrentRealSeconds - LastUsedTime > Cooldown;
 	}
 
+	UFUNCTION(BlueprintCallable, Category = Skill)
 	FORCEINLINE float GetLastUsedTime() const
 	{
 		return LastUsedTime;
 	}
 
+	UFUNCTION(BlueprintCallable, Category = Skill)
 	FORCEINLINE float GetCooldown() const
 	{
 		return Cooldown;
@@ -103,8 +107,8 @@ public:
 	virtual void StartUsing(class AInfomorphPlayerController* InfomorphPlayerController) override;
 	virtual void StopUsing() override;
 
-	virtual UFUNCTION(BlueprintCallable, Category = Skill)
-	FORCEINLINE bool IsBeingUsed() const override
+	UFUNCTION(BlueprintCallable, Category = Skill)
+	virtual FORCEINLINE bool IsBeingUsed() const override
 	{
 		return BuildUpTimerHandle.IsValid() || PossessingTimerHandle.IsValid();
 	}
