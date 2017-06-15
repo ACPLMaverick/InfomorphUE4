@@ -31,7 +31,6 @@ void AInfomorphBaseAIController::OnTargetPerceptionUpdated(AActor* Actor, FAISti
 		if(InfomorphPC != nullptr)
 		{
 			bIsPlayerNoticed = Stimulus.WasSuccessfullySensed();
-			LogOnScreen("Hi");
 			if(bIsPlayerNoticed)
 			{
 				Blackboard->SetValueAsObject("Target", SensedCharacter);
@@ -96,6 +95,10 @@ void AInfomorphBaseAIController::Possess(APawn* InPawn)
 		AInfomorphUE4Character* InfomorphCharacter = Cast<AInfomorphUE4Character>(InPawn);
 		if(InfomorphCharacter != nullptr && InfomorphCharacter->BehaviorTree != nullptr)
 		{
+			SenseConfig_Hearing->HearingRange = InfomorphCharacter->GetCharacterStats().HearRange;
+			SenseConfig_Hearing->LoSHearingRange = SenseConfig_Hearing->HearingRange * 1.5f;
+			AIPerception->ConfigureSense(*SenseConfig_Hearing);
+
 			if(InfomorphCharacter->BehaviorTree->BlackboardAsset != nullptr)
 			{
 				Blackboard->InitializeBlackboard(*(InfomorphCharacter->BehaviorTree->BlackboardAsset));
@@ -113,6 +116,16 @@ void AInfomorphBaseAIController::Tick(float DeltaSeconds)
 	{
 		BrainComponent->StopLogic("Death");
 	}
+}
+
+void AInfomorphBaseAIController::PauseBehaviorTree(const FString& Reason)
+{
+	BrainComponent->StopLogic(Reason);
+}
+
+void AInfomorphBaseAIController::ResumeBehaviorTree()
+{
+	BrainComponent->RestartLogic();
 }
 
 void AInfomorphBaseAIController::DrawDebug(float DeltaSeconds)

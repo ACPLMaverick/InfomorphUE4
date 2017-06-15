@@ -40,6 +40,9 @@ public:
 
 	virtual void Tick(float DeltaSeconds) override;
 
+	void PauseBehaviorTree(const FString& Reason);
+	void ResumeBehaviorTree();
+
 	UFUNCTION(BlueprintCallable, Category = Perception)
 		bool IsPlayerNoticed() const { return bIsPlayerNoticed; }
 };

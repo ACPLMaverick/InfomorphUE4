@@ -20,6 +20,9 @@ class INFOMORPHUE4_API UInfomorph_GeneratePatrolLocation : public UBTTaskNode
 	UPROPERTY(config, Category = Node, EditAnywhere, meta = (ClampMin = "0.0", UIMin = "0.0"))
 		float MaxDistanceToPatrolLocation;
 
+	UPROPERTY(config, Category = Node, EditAnywhere)
+		FBlackboardKeySelector PatrolLocationKey;
+
 private:
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 

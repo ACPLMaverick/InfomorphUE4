@@ -3,7 +3,6 @@
 #include "InfomorphUE4Character.h"
 #include "InfomorphUE4.h"
 #include "InfomorphPlayerController.h"
-#include "InfomorphBaseAIController.h"
 #include "InfomorphUE4GameMode.h"
 #include "Kismet/HeadMountedDisplayFunctionLibrary.h"
 #include "Camera/CameraComponent.h"
@@ -210,16 +209,6 @@ bool AInfomorphUE4Character::IsTargetVisible(const FVector& Direction) const
 	bool bWasHit = World->LineTraceSingleByObjectType(Hit, GetEyesLocation(), GetEyesLocation() + Direction * CharacterStats.SightRange, ObjectQueryParams, TraceParams);
 
 	return Hit.GetActor() != nullptr && Hit.GetActor()->IsA<AInfomorphUE4Character>();
-}
-
-float AInfomorphUE4Character::CalculateTargetYaw(const FRotator& CurrentRotation, const FRotator& TargetRotation, float LerpT) const
-{
-	float TargetYaw = TargetRotation.Yaw;
-	if(FMath::Abs(TargetYaw - CurrentRotation.Yaw) > 180.0f)
-	{
-		TargetYaw = CurrentRotation.Yaw + FMath::Sign(CurrentRotation.Yaw) * (180.0f - FMath::Abs(CurrentRotation.Yaw) + 180.0f - FMath::Abs(TargetYaw));
-	}
-	return FMath::Lerp(CurrentRotation.Yaw, TargetYaw, FMath::Clamp(LerpT, 0.0f, 1.0f));
 }
 
 AInfomorphUE4Character::AInfomorphUE4Character()
@@ -436,6 +425,15 @@ float AInfomorphUE4Character::TakeDamage(float DamageAmount, FDamageEvent const&
 	LastActionTime = GetWorld()->GetRealTimeSeconds();
 	CharacterStats.CurrentConsciousness = FMath::Clamp(CharacterStats.CurrentConsciousness - ActualDamage, 0.0f, CharacterStats.BaseConsciousness);
 	bWasHit = ActualDamage > 0.0f;
+
+	if(bWasHit)
+	{
+		AInfomorphBaseAIController* InfomorphAIController = Cast<AInfomorphBaseAIController>(GetController());
+		if(InfomorphAIController)
+		{
+			InfomorphAIController->PauseBehaviorTree("Hit");
+		}
+	}
 
 	return ActualDamage;
 }
@@ -691,6 +689,16 @@ void AInfomorphUE4Character::SetInteractionTarget(USceneComponent* NewInteractio
 		YawDifference = TargetRotateYaw - (GetActorRotation().Yaw + YawDifference);
 		InteractionRotateToTargetLerpTime = FMath::Abs(YawDifference) / 60.0f;
 	}
+}
+
+float AInfomorphUE4Character::CalculateTargetYaw(const FRotator& CurrentRotation, const FRotator& TargetRotation, float LerpT) const
+{
+	float TargetYaw = TargetRotation.Yaw;
+	if(FMath::Abs(TargetYaw - CurrentRotation.Yaw) > 180.0f)
+	{
+		TargetYaw = CurrentRotation.Yaw + FMath::Sign(CurrentRotation.Yaw) * (180.0f - FMath::Abs(CurrentRotation.Yaw) + 180.0f - FMath::Abs(TargetYaw));
+	}
+	return FMath::Lerp(CurrentRotation.Yaw, TargetYaw, FMath::Clamp(LerpT, 0.0f, 1.0f));
 }
 
 void AInfomorphUE4Character::EnableWeaponCollision()

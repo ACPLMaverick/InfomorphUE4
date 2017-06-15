@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "InfomorphWeapon.h"
 #include "InfomorphShield.h"
+#include "InfomorphBaseAIController.h"
 #include "InfomorphUE4Character.generated.h"
 
 USTRUCT()
@@ -144,8 +145,6 @@ protected:
 
 	bool IsTargetVisible(const FVector& Direction) const;
 
-	float CalculateTargetYaw(const FRotator& CurrentRotation, const FRotator& TargetRotation, float LerpT) const;
-
 public:
 	AInfomorphUE4Character();
 
@@ -172,6 +171,7 @@ public:
 	float GetPossessionChance(const FVector& PlayerLocation);
 	void Confuse(float ConfusionTime, float Multiplier = 1.0f);
 	void SetInteractionTarget(USceneComponent* NewInteractionTarget);
+	float CalculateTargetYaw(const FRotator& CurrentRotation, const FRotator& TargetRotation, float LerpT) const;
 
 	UFUNCTION(BlueprintCallable, Category = Attack)
 		void EnableWeaponCollision();
@@ -224,6 +224,12 @@ public:
 		void ResetHit()
 	{
 		bWasHit = false;
+
+		AInfomorphBaseAIController* InfomorphAIController = Cast<AInfomorphBaseAIController>(GetController());
+		if(InfomorphAIController)
+		{
+			InfomorphAIController->ResumeBehaviorTree();
+		}
 	}
 
 	UFUNCTION(BlueprintCallable, Category = Dodge) 

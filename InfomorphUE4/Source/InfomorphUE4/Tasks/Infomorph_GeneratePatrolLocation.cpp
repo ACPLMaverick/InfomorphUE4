@@ -18,7 +18,6 @@ EBTNodeResult::Type UInfomorph_GeneratePatrolLocation::ExecuteTask(UBehaviorTree
 	AInfomorphUE4Character* InfomorphCharacter = Cast<AInfomorphUE4Character>(InfomorphAIController->GetPawn());
 	if(InfomorphCharacter == nullptr)
 	{
-		LogOnScreen("?");
 		return EBTNodeResult::Failed;
 	}
 
@@ -29,9 +28,8 @@ EBTNodeResult::Type UInfomorph_GeneratePatrolLocation::ExecuteTask(UBehaviorTree
 
 	FVector PatrolLocation = CharacterLocation + ToPatrolLocation * FMath::RandRange(MinDistanceToPatrolLocation, MaxDistanceToPatrolLocation);
 
-	OwnerComp.GetBlackboardComponent()->SetValueAsVector("PatrolLocation", PatrolLocation);
+	OwnerComp.GetBlackboardComponent()->SetValueAsVector(PatrolLocationKey.SelectedKeyName, PatrolLocation);
 
-	LogOnScreen("!");
 	return EBTNodeResult::Succeeded;
 }
 
