@@ -263,6 +263,7 @@ void AInfomorphPlayerController::PerformInteraction()
 	{
 		if(IsInteractionPossible())
 		{
+			PossessedCharacter->UnlockCamera();
 			USceneComponent* InteractionTarget = CurrentInteractable->GetInteractionTarget(PossessedCharacter);
 			PossessedCharacter->SetInteractionTarget(InteractionTarget);
 			if(InteractionTarget == nullptr)

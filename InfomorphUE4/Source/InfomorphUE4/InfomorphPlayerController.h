@@ -134,6 +134,12 @@ public:
 		return Skills.IsValidIndex(CurrentSelectedSkillIndex) && Skills[CurrentSelectedSkillIndex].Skill != nullptr && Skills[CurrentSelectedSkillIndex].Skill->IsBeingUsed();
 	}
 
+	UFUNCTION(BlueprintCallable, Category = Skills)
+		FORCEINLINE UInfomorphSkillBase* GetCurrentSkill() const
+	{
+		return CurrentSelectedSkillIndex < Skills.Num() ? Skills[CurrentSelectedSkillIndex].Skill : nullptr;
+	}
+
 	UFUNCTION(BlueprintCallable, Category = Interaction)
 		FORCEINLINE bool IsInteractionPossible() const
 	{

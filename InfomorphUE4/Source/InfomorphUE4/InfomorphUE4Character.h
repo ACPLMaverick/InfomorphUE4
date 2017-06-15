@@ -112,7 +112,9 @@ protected:
 
 	FVector DodgeWorldDirection;
 	FVector BeforeAttackDirection;
+	FVector InitialLocation;
 
+	float PossessionTime;
 	float LastTimeTargetSeen;
 	float LastActionTime;
 	float LastSpecialAttackTime;
@@ -248,6 +250,9 @@ public:
 			bWasHit =
 			bIsBlocking = false;
 	}
+
+	UFUNCTION(BlueprintCallable, Category = Stats)
+		FORCEINLINE FVector GetInitialLocation() const { return InitialLocation; }
 
 	UFUNCTION(BlueprintCallable, Category = Camera)
 		FVector GetEyesLocation() const;

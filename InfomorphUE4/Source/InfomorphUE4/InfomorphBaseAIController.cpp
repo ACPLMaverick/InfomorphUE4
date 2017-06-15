@@ -31,6 +31,7 @@ void AInfomorphBaseAIController::OnTargetPerceptionUpdated(AActor* Actor, FAISti
 		if(InfomorphPC != nullptr)
 		{
 			bIsPlayerNoticed = Stimulus.WasSuccessfullySensed();
+			LogOnScreen("Hi");
 			if(bIsPlayerNoticed)
 			{
 				Blackboard->SetValueAsObject("Target", SensedCharacter);
@@ -89,6 +90,8 @@ void AInfomorphBaseAIController::Possess(APawn* InPawn)
 	if(InPawn != nullptr && SenseConfig_Sight != nullptr)
 	{
 		UAIPerceptionSystem::RegisterPerceptionStimuliSource(this, SenseConfig_Sight->GetSenseImplementation(), InPawn);
+		UAIPerceptionSystem::RegisterPerceptionStimuliSource(this, SenseConfig_Damage->GetSenseImplementation(), InPawn);
+		UAIPerceptionSystem::RegisterPerceptionStimuliSource(this, SenseConfig_Hearing->GetSenseImplementation(), InPawn);
 
 		AInfomorphUE4Character* InfomorphCharacter = Cast<AInfomorphUE4Character>(InPawn);
 		if(InfomorphCharacter != nullptr && InfomorphCharacter->BehaviorTree != nullptr)
@@ -105,7 +108,11 @@ void AInfomorphBaseAIController::Possess(APawn* InPawn)
 void AInfomorphBaseAIController::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-	DrawDebug(DeltaSeconds);
+	AInfomorphUE4Character* InfomorphCharacter = Cast<AInfomorphUE4Character>(GetPawn());
+	if(InfomorphCharacter != nullptr && InfomorphCharacter->IsDead())
+	{
+		BrainComponent->StopLogic("Death");
+	}
 }
 
 void AInfomorphBaseAIController::DrawDebug(float DeltaSeconds)

@@ -311,6 +311,8 @@ void AInfomorphUE4Character::BeginPlay()
 	ShieldActor->SetActorRelativeRotation(FQuat::Identity);
 
 	ResetState();
+
+	InitialLocation = GetActorLocation();
 }
 
 void AInfomorphUE4Character::Tick(float DeltaSeconds)
@@ -526,10 +528,6 @@ void AInfomorphUE4Character::Attack()
 		return;
 	}
 
-	if(IsBlocking())
-	{
-		EndBlock();
-	}
 	CharacterStats.CurrentEnergy -= CharacterStats.LightAttackEnergyCost;
 	LastActionTime = GetWorld()->GetRealTimeSeconds();
 	bIsLightAttack = true;
@@ -552,10 +550,6 @@ void AInfomorphUE4Character::HeavyAttack()
 		return;
 	}
 
-	if(IsBlocking())
-	{
-		EndBlock();
-	}
 	CharacterStats.CurrentEnergy -= CharacterStats.HeavyAttackEnergyCost;
 	LastActionTime = GetWorld()->GetRealTimeSeconds();
 	bIsHeavyAttack = true;
@@ -580,11 +574,6 @@ void AInfomorphUE4Character::SpecialAttack()
 	if(GetWorld()->GetRealTimeSeconds() - LastSpecialAttackTime <= CharacterStats.SpecialAttackCooldown)
 	{
 		return;
-	}
-
-	if(IsBlocking())
-	{
-		EndBlock();
 	}
 
 	LastSpecialAttackTime = GetWorld()->GetRealTimeSeconds();

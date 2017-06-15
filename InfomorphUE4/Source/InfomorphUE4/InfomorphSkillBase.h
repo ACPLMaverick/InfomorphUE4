@@ -90,6 +90,7 @@ protected:
 	FTimerHandle CheckIfPossessableTimerHandle;
 
 	float BuildUpTimer;
+	float PossessionTimer;
 
 protected:
 	void OnBuildUpTimerCompleted();
@@ -102,8 +103,33 @@ public:
 	virtual void StartUsing(class AInfomorphPlayerController* InfomorphPlayerController) override;
 	virtual void StopUsing() override;
 
-	FORCEINLINE virtual bool IsBeingUsed() const override
+	virtual UFUNCTION(BlueprintCallable, Category = Skill)
+	FORCEINLINE bool IsBeingUsed() const override
 	{
 		return BuildUpTimerHandle.IsValid() || PossessingTimerHandle.IsValid();
+	}
+
+	UFUNCTION(BlueprintCallable, Category = Skill)
+	FORCEINLINE float GetPossessionTime() const
+	{
+		return PossessionTime;
+	}
+
+	UFUNCTION(BlueprintCallable, Category = Skill)
+		FORCEINLINE float GetPossessionTimer() const
+	{
+		return PossessionTimer;
+	}
+
+	UFUNCTION(BlueprintCallable, Category = Skill)
+		FORCEINLINE float GetBuildUpTime() const
+	{
+		return BuildUpTime;
+	}
+
+	UFUNCTION(BlueprintCallable, Category = Skill)
+		FORCEINLINE float GetBuildUpTimer() const
+	{
+		return BuildUpTimer;
 	}
 };

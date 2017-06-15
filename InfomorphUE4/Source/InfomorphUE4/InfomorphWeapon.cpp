@@ -4,6 +4,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "InfomorphUE4Character.h"
 #include "InfomorphUE4.h"
+#include "Perception/AISense_Damage.h"
 
 // Sets default values
 AInfomorphWeapon::AInfomorphWeapon(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
@@ -59,6 +60,7 @@ void AInfomorphWeapon::OnWeaponBeginOverlap(UPrimitiveComponent* OverlappedCompo
 	}
 
 	OtherCharacter->TakeDamage(CurrentDamage, FDamageEvent(), ParentCharacter->GetController(), ParentCharacter);
+	UAISense_Damage::ReportDamageEvent(GetWorld(), OtherCharacter, ParentCharacter, CurrentDamage, WeaponMesh->GetComponentLocation(), SweepResult.Location);
 }
 
 // Called every frame

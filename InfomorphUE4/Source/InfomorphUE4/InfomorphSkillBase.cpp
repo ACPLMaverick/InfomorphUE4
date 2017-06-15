@@ -43,6 +43,7 @@ void UInfomorphSkillPossession::OnBuildUpTimerCompleted()
 	InfomorphPC->SetViewTargetWithBlend(CharacterToPossess, PossessionTime, EViewTargetBlendFunction::VTBlend_Cubic);
 	InfomorphPC->GetWorldTimerManager().SetTimer(PossessingTimerHandle, this, &UInfomorphSkillPossession::OnPossessionTimerCompleted, PossessionTime);
 	InfomorphPC->GetWorldTimerManager().SetTimer(CheckIfPossessableTimerHandle, this, &UInfomorphSkillPossession::OnCheckIfPossessableTimerCompleted, 0.5f * PossessionTime);
+	PossessionTimer = 0.0f;
 }
 
 void UInfomorphSkillPossession::OnPossessionTimerCompleted()
@@ -86,6 +87,10 @@ void UInfomorphSkillPossession::Tick(float DeltaSeconds)
 		{
 			InfomorphPC->SetMovementMultiplier(1.0f - BuildUpTimer / (BuildUpTime * 0.8f));
 		}
+	}
+	if(PossessingTimerHandle.IsValid())
+	{
+		PossessionTimer += DeltaSeconds;
 	}
 }
 
