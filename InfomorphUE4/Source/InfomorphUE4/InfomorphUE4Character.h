@@ -87,7 +87,7 @@ protected:
 		TSubclassOf<AInfomorphShield> ShieldClass;
 	UPROPERTY(EditAnywhere, Category = Weapon)
 		FName WeaponSocketName;
-	UPROPERTY(EditAnywhere, Category = Weapon)
+	UPROPERTY(EditAnywhere, Category = Shield)
 		FName ShieldSocketName;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stats)
@@ -126,6 +126,10 @@ protected:
 	bool bIsDodgingZeroInput;
 	bool bWasHit;
 	bool bIsBlocking;
+
+public:
+	UPROPERTY(EditAnywhere, Category = AI)
+		class UBehaviorTree* BehaviorTree;
 
 protected:
 	void ProcessCameraLocked(float DeltaSeconds);

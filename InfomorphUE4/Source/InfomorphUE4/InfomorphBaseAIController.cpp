@@ -11,6 +11,10 @@
 #include "Perception/AISenseConfig_Damage.h"
 #include "Perception/AIPerceptionSystem.h"
 
+#include "BehaviorTree/BehaviorTree.h"
+#include "BehaviorTree/BehaviorTreeComponent.h"
+#include "BehaviorTree/BlackboardComponent.h"
+
 #include "DrawDebugHelpers.h"
 
 void AInfomorphBaseAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
@@ -27,6 +31,14 @@ void AInfomorphBaseAIController::OnTargetPerceptionUpdated(AActor* Actor, FAISti
 		if(InfomorphPC != nullptr)
 		{
 			bIsPlayerNoticed = Stimulus.WasSuccessfullySensed();
+			if(bIsPlayerNoticed)
+			{
+				Blackboard->SetValueAsObject("Target", SensedCharacter);
+			}
+			else
+			{
+				Blackboard->SetValueAsObject("Target", nullptr);
+			}
 		}
 	}
 }
@@ -63,6 +75,8 @@ AInfomorphBaseAIController::AInfomorphBaseAIController(const FObjectInitializer&
 	SenseConfig_Damage = CreateDefaultSubobject<UAISenseConfig_Damage>(TEXT("Sense Config Damage"));
 	AIPerception->ConfigureSense(*SenseConfig_Damage);
 
+	BrainComponent = CreateDefaultSubobject<UBehaviorTreeComponent>(TEXT("BehaviorTreeComponent"));
+	Blackboard = CreateDefaultSubobject<UBlackboardComponent>(TEXT("BlackboardComponent"));
 
 	AIPerception->SetDominantSense(SenseConfig_Sight->GetSenseImplementation());
 
@@ -75,6 +89,16 @@ void AInfomorphBaseAIController::Possess(APawn* InPawn)
 	if(InPawn != nullptr && SenseConfig_Sight != nullptr)
 	{
 		UAIPerceptionSystem::RegisterPerceptionStimuliSource(this, SenseConfig_Sight->GetSenseImplementation(), InPawn);
+
+		AInfomorphUE4Character* InfomorphCharacter = Cast<AInfomorphUE4Character>(InPawn);
+		if(InfomorphCharacter != nullptr && InfomorphCharacter->BehaviorTree != nullptr)
+		{
+			if(InfomorphCharacter->BehaviorTree->BlackboardAsset != nullptr)
+			{
+				Blackboard->InitializeBlackboard(*(InfomorphCharacter->BehaviorTree->BlackboardAsset));
+			}
+			((UBehaviorTreeComponent*)BrainComponent)->StartTree(*(InfomorphCharacter->BehaviorTree));
+		}
 	}
 }
 
