@@ -9,6 +9,8 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/SphereComponent.h"
 
+#include "DrawDebugHelpers.h"
+
 void AInfomorphPlayerController::MoveForward(float Value)
 {
 	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
@@ -46,18 +48,7 @@ void AInfomorphPlayerController::Turn(float Value)
 		LastLookedTimer = 0.0f;
 		AddYawInput(Value * LookMultiplier);
 
-		AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
-		if(PossessedCharacter != nullptr && !PossessedCharacter->IsDead() && PossessedCharacter->IsCameraLocked())
-		{
-			FVector EyesLocation = PossessedCharacter->GetEyesLocation();
-			FVector Direction = PossessedCharacter->GetEyesDirection();
-			float MaxDistance = PossessedCharacter->GetSightRange();
-			AActor* PossibleTarget = GetActorInLookDirection(EyesLocation, Direction, MaxDistance);
-			if(PossibleTarget != nullptr && PossibleTarget != PossessedCharacter->GetCameraTarget())
-			{
-				PossessedCharacter->LockCameraOnTarget(PossibleTarget);
-			}
-		}
+		TryLockCamera(true);
 	}
 }
 
@@ -68,18 +59,7 @@ void AInfomorphPlayerController::TurnAtRate(float Rate)
 		LastLookedTimer = 0.0f;
 		AddYawInput(Rate * BaseTurnRate * GetWorld()->GetDeltaSeconds() * LookMultiplier);
 
-		AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
-		if(PossessedCharacter != nullptr && !PossessedCharacter->IsDead() && PossessedCharacter->IsCameraLocked())
-		{
-			FVector EyesLocation = PossessedCharacter->GetEyesLocation();
-			FVector Direction = PossessedCharacter->GetEyesDirection();
-			float MaxDistance = PossessedCharacter->GetSightRange();
-			AActor* PossibleTarget = GetActorInLookDirection(EyesLocation, Direction, MaxDistance);
-			if(PossibleTarget != nullptr && PossibleTarget != PossessedCharacter->GetCameraTarget())
-			{
-				PossessedCharacter->LockCameraOnTarget(PossibleTarget);
-			}
-		}
+		TryLockCamera(true);
 	}
 }
 
@@ -90,18 +70,7 @@ void AInfomorphPlayerController::LookUp(float Value)
 		LastLookedTimer = 0.0f;
 		AddPitchInput(Value * LookMultiplier);
 
-		AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
-		if(PossessedCharacter != nullptr && !PossessedCharacter->IsDead() && PossessedCharacter->IsCameraLocked())
-		{
-			FVector EyesLocation = PossessedCharacter->GetEyesLocation();
-			FVector Direction = PossessedCharacter->GetEyesDirection();
-			float MaxDistance = PossessedCharacter->GetSightRange();
-			AActor* PossibleTarget = GetActorInLookDirection(EyesLocation, Direction, MaxDistance);
-			if(PossibleTarget != nullptr && PossibleTarget != PossessedCharacter->GetCameraTarget())
-			{
-				PossessedCharacter->LockCameraOnTarget(PossibleTarget);
-			}
-		}
+		TryLockCamera(true);
 	}
 }
 
@@ -112,18 +81,7 @@ void AInfomorphPlayerController::LookUpAtRate(float Rate)
 		LastLookedTimer = 0.0f;
 		AddPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds() * LookMultiplier);
 
-		AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
-		if(PossessedCharacter != nullptr && !PossessedCharacter->IsDead() && PossessedCharacter->IsCameraLocked())
-		{
-			FVector EyesLocation = PossessedCharacter->GetEyesLocation();
-			FVector Direction = PossessedCharacter->GetEyesDirection();
-			float MaxDistance = PossessedCharacter->GetSightRange();
-			AActor* PossibleTarget = GetActorInLookDirection(EyesLocation, Direction, MaxDistance);
-			if(PossibleTarget != nullptr && PossibleTarget != PossessedCharacter->GetCameraTarget())
-			{
-				PossessedCharacter->LockCameraOnTarget(PossibleTarget);
-			}
-		}
+		TryLockCamera(true);
 	}
 }
 
@@ -326,13 +284,7 @@ void AInfomorphPlayerController::PerformCameraLock()
 		}
 		else
 		{
-			FVector EyesLocation = PossessedCharacter->GetEyesLocation();
-			FVector Direction = PossessedCharacter->GetEyesDirection();
-			float MaxDistance = PossessedCharacter->GetSightRange();
-			if(PossessedCharacter->LockCameraOnTarget(GetActorInLookDirection(EyesLocation, Direction, MaxDistance)))
-			{
-				LastLookedTimer = LookTimerThreshold - 0.02f;
-			}
+			TryLockCamera();
 		}
 	}
 }
@@ -459,6 +411,9 @@ AActor* AInfomorphPlayerController::GetActorInLookDirection(const FVector& EyesL
 	if(bWasHit)
 	{
 		float MaxAngle = 60.0f;
+		float MinAngle = MaxAngle;
+		float MaxAngleDeviation = 5.0f;
+		float MaxScore = 0.0f;
 		float ClosestDistance = MaxDistance;
 		const int32 HitsSize = Hits.Num();
 		for(int32 i = 0; i < HitsSize; ++i)
@@ -470,13 +425,26 @@ AActor* AInfomorphPlayerController::GetActorInLookDirection(const FVector& EyesL
 
 			FVector ToHitLocation = Hits[i].GetActor()->GetActorLocation() - EyesLocation;
 			ToHitLocation.Normalize();
-			float angle = FMath::Acos(FVector::DotProduct(Direction, ToHitLocation));
-			if(angle < MaxAngle)
+			float DotProduct = FVector::DotProduct(Direction, ToHitLocation);
+			float Angle = FMath::Acos(DotProduct);
+			if(Angle < MaxAngle)
 			{
 				float Distance = FVector::Distance(EyesLocation, Hits[i].GetActor()->GetActorLocation());
 				if(Distance < ClosestDistance)
 				{
 					ClosestDistance = Distance;
+				}
+				if(Angle < MinAngle)
+				{
+					MinAngle = Angle;
+				}
+
+				float AngleScore = DotProduct;
+				float DistanceScore = 1.0f - FMath::Clamp((Distance - ClosestDistance) / MaxDistance, 0.0f, 1.0f);
+				float Score = AngleScore * 0.8f + DistanceScore * 0.2f;
+				if(Score > MaxScore)
+				{
+					MaxScore = Score;
 					HitActor = Hits[i].GetActor();
 				}
 			}
@@ -525,6 +493,27 @@ void AInfomorphPlayerController::LookForInteractables(float DeltaSeconds)
 	if(CurrentInteractable != nullptr)
 	{
 		LogOnScreen(21, DeltaSeconds, FColor::Cyan, FString("CurrentInteractable: ").Append(CurrentInteractable->GetName()));
+	}
+}
+
+void AInfomorphPlayerController::TryLockCamera(bool bOnlyIfCameraLocked)
+{
+	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
+	if(PossessedCharacter != nullptr && !PossessedCharacter->IsDead())
+	{
+		if(bOnlyIfCameraLocked && !PossessedCharacter->IsCameraLocked())
+		{
+			return;
+		}
+
+		FVector EyesLocation = PossessedCharacter->GetEyesLocation();
+		FVector Direction = PossessedCharacter->GetEyesDirection();
+		float MaxDistance = PossessedCharacter->GetSightRange();
+		AActor* PossibleTarget = GetActorInLookDirection(EyesLocation, Direction, MaxDistance);
+		if(PossibleTarget != nullptr)
+		{
+			PossessedCharacter->LockCameraOnTarget(PossibleTarget);
+		}
 	}
 }
 
