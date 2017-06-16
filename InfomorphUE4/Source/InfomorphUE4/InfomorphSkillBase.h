@@ -120,6 +120,12 @@ public:
 	}
 
 	UFUNCTION(BlueprintCallable, Category = Skill)
+	FORCEINLINE AInfomorphUE4Character* GetPossessedCharacter() const
+	{
+		return CharacterToPossess;
+	}
+
+	UFUNCTION(BlueprintCallable, Category = Skill)
 		FORCEINLINE float GetPossessionTimer() const
 	{
 		return PossessionTimer;
