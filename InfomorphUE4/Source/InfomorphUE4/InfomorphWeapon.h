@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Sound/SoundBase.h"
+#include "Kismet/GameplayStatics.h"
 #include "InfomorphWeapon.generated.h"
 
 UCLASS()
@@ -14,6 +16,8 @@ class INFOMORPHUE4_API AInfomorphWeapon : public AActor
 protected:
 	UPROPERTY(EditAnywhere, Category = Visual)
 		class UStaticMeshComponent* WeaponMesh;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sounds)
+		USoundBase* AttackSound;
 	
 	float CurrentDamage;
 
@@ -42,4 +46,9 @@ public:
 
 	virtual void EnableCollision();
 	virtual void DisableCollision();
+
+	FORCEINLINE void PlayAttackSound()
+	{
+		UGameplayStatics::PlaySoundAtLocation((UObject*)GetWorld(), AttackSound, GetActorLocation());
+	}
 };

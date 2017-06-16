@@ -21,6 +21,12 @@ class INFOMORPHUE4_API UInfomorph_Block : public UBTTaskNode
 		float RandomDeviation;
 
 	UPROPERTY(config, Category = Node, EditAnywhere, meta = (ClampMin = "0.0", UIMin = "0.0"))
+		float TargetDistanceFromTarget;
+
+	UPROPERTY(config, Category = Node, EditAnywhere)
+		FBlackboardKeySelector TargetKey;
+
+	UPROPERTY(config, Category = Node, EditAnywhere, meta = (ClampMin = "0.0", UIMin = "0.0"))
 		float Cooldown;
 
 private:
@@ -40,4 +46,5 @@ struct FBlockMemory
 {
 	float RemainingTime;
 	float LastBlockTime;
+	float PreviousMaxSpeed;
 };

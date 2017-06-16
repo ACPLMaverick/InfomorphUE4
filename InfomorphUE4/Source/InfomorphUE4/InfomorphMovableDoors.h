@@ -29,6 +29,8 @@ protected:
 	UPROPERTY(EditAnywhere, Category = Doors)
 		class UCurveFloat* OpeningCurve;
 	UPROPERTY(EditAnywhere, Category = Doors)
+		class USoundBase* OpenCloseSound;
+	UPROPERTY(EditAnywhere, Category = Doors)
 		float OpeningSpeed;
 	UPROPERTY(EditAnywhere, Category = Doors)
 		float OpenDistance;

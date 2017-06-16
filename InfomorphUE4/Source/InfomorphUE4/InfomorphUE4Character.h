@@ -94,7 +94,13 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stats)
 		FCharacterStats CharacterStats;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sounds)
+		class USoundBase* HitSound;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sounds)
+		class USoundBase* DeathSound;
+
 	AInfomorphWeapon* CurrentWeapon;
+	AInfomorphShield* CurrentShield;
 
 	AActor* CameraTarget;
 	float LockedCameraTimer;
@@ -235,6 +241,12 @@ public:
 		{
 			InfomorphAIController->ResumeBehaviorTree();
 		}
+	}
+
+	UFUNCTION(BlueprintCallable, Category = Attack)
+		void PlayWeaponSound()
+	{
+		CurrentWeapon->PlayAttackSound();
 	}
 
 	UFUNCTION(BlueprintCallable, Category = Dodge) 

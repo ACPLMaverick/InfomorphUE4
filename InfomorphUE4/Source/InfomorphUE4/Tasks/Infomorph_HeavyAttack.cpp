@@ -16,7 +16,7 @@ EBTNodeResult::Type UInfomorph_HeavyAttack::ExecuteTask(UBehaviorTreeComponent& 
 		return EBTNodeResult::Failed;
 	}
 
-	bool Success = InfomorphAIController->PerformAttack();
+	bool Success = InfomorphAIController->PerformHeavyAttack();
 
 	return Success ? EBTNodeResult::InProgress : EBTNodeResult::Failed;
 }

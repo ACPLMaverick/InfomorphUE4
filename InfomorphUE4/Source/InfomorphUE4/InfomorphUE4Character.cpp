@@ -16,6 +16,8 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/PointLightComponent.h"
+#include "Sound/SoundBase.h"
+#include "Kismet/GameplayStatics.h"
 
 FCharacterStats::FCharacterStats()
 {
@@ -247,6 +249,8 @@ AInfomorphUE4Character::AInfomorphUE4Character()
 	InteractionSphere->SetupAttachment(RootComponent);
 	InteractionSphere->SetSphereRadius(400.0f);
 	InteractionSphere->bGenerateOverlapEvents = true;
+	InteractionSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	InteractionSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Overlap);
 
 	Light = CreateDefaultSubobject<UPointLightComponent>(TEXT("Light"));
 	Light->SetupAttachment(GetMesh(), "LightSocket");
@@ -293,10 +297,10 @@ void AInfomorphUE4Character::BeginPlay()
 		CurrentWeapon->SetActorRelativeRotation(FQuat::Identity);
 	}
 
-	AInfomorphShield* ShieldActor = GetWorld()->SpawnActor<AInfomorphShield>(ShieldClass.Get());
-	ShieldActor->AttachToComponent((USceneComponent*)GetMesh(), AttachmentRules, ShieldSocketName);
-	ShieldActor->SetActorRelativeLocation(FVector::ZeroVector);
-	ShieldActor->SetActorRelativeRotation(FQuat::Identity);
+	CurrentShield = GetWorld()->SpawnActor<AInfomorphShield>(ShieldClass.Get());
+	CurrentShield->AttachToComponent((USceneComponent*)GetMesh(), AttachmentRules, ShieldSocketName);
+	CurrentShield->SetActorRelativeLocation(FVector::ZeroVector);
+	CurrentShield->SetActorRelativeRotation(FQuat::Identity);
 
 	ResetState();
 
@@ -420,6 +424,13 @@ float AInfomorphUE4Character::TakeDamage(float DamageAmount, FDamageEvent const&
 			EnergyLost = CharacterStats.CurrentEnergy;
 			EndBlock();
 		}
+		else
+		{
+			if(CurrentShield != nullptr)
+			{
+				CurrentShield->PlayHitSound();
+			}
+		}
 	}
 
 	if(GetController()->IsA<AInfomorphPlayerController>())
@@ -438,6 +449,15 @@ float AInfomorphUE4Character::TakeDamage(float DamageAmount, FDamageEvent const&
 		if(InfomorphAIController)
 		{
 			InfomorphAIController->PauseBehaviorTree("Hit");
+		}
+
+		if(IsDead())
+		{
+			UGameplayStatics::PlaySoundAtLocation(GetWorld(), DeathSound, GetActorLocation());
+		}
+		else
+		{
+			UGameplayStatics::PlaySoundAtLocation(GetWorld(), HitSound, GetActorLocation());
 		}
 	}
 

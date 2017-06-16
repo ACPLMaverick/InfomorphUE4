@@ -129,6 +129,7 @@ void AInfomorphMovableDoors::Tick(float DeltaSeconds)
 			bAreClosing = true;
 			bAreOpened = false;
 			ClosingTime = 0.0f;
+			UGameplayStatics::PlaySoundAtLocation(GetWorld(), OpenCloseSound, GetActorLocation());
 		}
 	}
 
@@ -165,6 +166,8 @@ void AInfomorphMovableDoors::Interact(AInfomorphUE4Character* Character)
 
 	DoorsClosedLocation = DoorsMesh->GetComponentLocation();
 	DoorsOpenedLocation = DoorsClosedLocation + MoveDirection->GetForwardVector() * OpenDistance;
+
+	UGameplayStatics::PlaySoundAtLocation(GetWorld(), OpenCloseSound, GetActorLocation());
 }
 
 void AInfomorphMovableDoors::StopInteracting()
@@ -177,7 +180,7 @@ void AInfomorphMovableDoors::StopInteracting()
 	}
 }
 
-USceneComponent * AInfomorphMovableDoors::GetInteractionTarget(AInfomorphUE4Character* Character) const
+USceneComponent* AInfomorphMovableDoors::GetInteractionTarget(AInfomorphUE4Character* Character) const
 {
 	float DistanceFromFront = FVector::Dist(Character->GetActorLocation(), FrontInteractionTarget->GetComponentLocation());
 	float DistanceFromBack = FVector::Dist(Character->GetActorLocation(), BackInteractionTarget->GetComponentLocation());
