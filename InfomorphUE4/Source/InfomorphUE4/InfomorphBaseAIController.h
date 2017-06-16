@@ -43,6 +43,14 @@ public:
 	void PauseBehaviorTree(const FString& Reason);
 	void ResumeBehaviorTree();
 
+	bool StartBlock();
+	bool EndBlock();
+
+	bool PerformAttack();
+	bool PerformHeavyAttack();
+	bool PerformSpecialAttack();
+	bool IsAttacking() const;
+
 	UFUNCTION(BlueprintCallable, Category = Perception)
 		bool IsPlayerNoticed() const { return bIsPlayerNoticed; }
 };

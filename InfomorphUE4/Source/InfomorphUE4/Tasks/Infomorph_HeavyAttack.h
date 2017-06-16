@@ -4,13 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/BTTaskNode.h"
-#include "Infomorph_Attack.generated.h"
+#include "Infomorph_HeavyAttack.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class INFOMORPHUE4_API UInfomorph_Attack : public UBTTaskNode
+class INFOMORPHUE4_API UInfomorph_HeavyAttack : public UBTTaskNode
 {
 	GENERATED_UCLASS_BODY()
 

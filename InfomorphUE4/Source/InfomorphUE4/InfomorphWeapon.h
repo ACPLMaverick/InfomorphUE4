@@ -17,6 +17,8 @@ protected:
 	
 	float CurrentDamage;
 
+	TArray<AActor*> IgnoredActors;
+
 public:	
 	// Sets default values for this actor's properties
 	AInfomorphWeapon(const FObjectInitializer& ObjectInitializer);

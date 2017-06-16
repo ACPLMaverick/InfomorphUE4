@@ -116,10 +116,16 @@ void AInfomorphBaseAIController::Tick(float DeltaSeconds)
 	AInfomorphUE4Character* InfomorphCharacter = Cast<AInfomorphUE4Character>(GetPawn());
 	if(InfomorphCharacter != nullptr && InfomorphCharacter->IsDead())
 	{
-		BrainComponent->StopLogic("Death");
+		if(BrainComponent != nullptr)
+		{
+			BrainComponent->StopLogic("Death");
+		}
 	}
 
-	Blackboard->SetValueAsVector("InitialLocation", InfomorphCharacter->GetInitialLocation());
+	if(Blackboard != nullptr)
+	{
+		Blackboard->SetValueAsVector("InitialLocation", InfomorphCharacter->GetInitialLocation());
+	}
 }
 
 void AInfomorphBaseAIController::PauseBehaviorTree(const FString& Reason)
@@ -130,6 +136,77 @@ void AInfomorphBaseAIController::PauseBehaviorTree(const FString& Reason)
 void AInfomorphBaseAIController::ResumeBehaviorTree()
 {
 	BrainComponent->RestartLogic();
+}
+
+bool AInfomorphBaseAIController::StartBlock()
+{
+	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
+	if(PossessedCharacter != nullptr)
+	{
+		PossessedCharacter->StartBlock();
+		return PossessedCharacter->IsBlocking();
+	}
+
+	return false;
+}
+
+bool AInfomorphBaseAIController::EndBlock()
+{
+	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
+	if(PossessedCharacter != nullptr)
+	{
+		PossessedCharacter->EndBlock();
+		return !PossessedCharacter->IsBlocking();
+	}
+
+	return false;
+}
+
+bool AInfomorphBaseAIController::PerformAttack()
+{
+	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
+	if(PossessedCharacter != nullptr)
+	{
+		PossessedCharacter->Attack();
+		return PossessedCharacter->IsLightAttack();
+	}
+
+	return false;
+}
+
+bool AInfomorphBaseAIController::PerformHeavyAttack()
+{
+	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
+	if(PossessedCharacter != nullptr)
+	{
+		PossessedCharacter->HeavyAttack();
+		return PossessedCharacter->IsHeavyAttack();
+	}
+
+	return false;
+}
+
+bool AInfomorphBaseAIController::PerformSpecialAttack()
+{
+	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
+	if(PossessedCharacter != nullptr)
+	{
+		PossessedCharacter->SpecialAttack();
+		return PossessedCharacter->IsSpecialAttack();
+	}
+
+	return false;
+}
+
+bool AInfomorphBaseAIController::IsAttacking() const
+{
+	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
+	if(PossessedCharacter != nullptr)
+	{
+		return PossessedCharacter->IsLightAttack() || PossessedCharacter->IsHeavyAttack() || PossessedCharacter->IsSpecialAttack();
+	}
+
+	return false;
 }
 
 void AInfomorphBaseAIController::DrawDebug(float DeltaSeconds)

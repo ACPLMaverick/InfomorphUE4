@@ -1,14 +1,14 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "Infomorph_Attack.h"
+#include "Infomorph_HeavyAttack.h"
 #include "InfomorphBaseAIController.h"
 
-UInfomorph_Attack::UInfomorph_Attack(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
+UInfomorph_HeavyAttack::UInfomorph_HeavyAttack(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	bNotifyTick = true;
 }
 
-EBTNodeResult::Type UInfomorph_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
+EBTNodeResult::Type UInfomorph_HeavyAttack::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
 	AInfomorphBaseAIController* InfomorphAIController = Cast<AInfomorphBaseAIController>(OwnerComp.GetAIOwner());
 	if(InfomorphAIController == nullptr)
@@ -21,7 +21,7 @@ EBTNodeResult::Type UInfomorph_Attack::ExecuteTask(UBehaviorTreeComponent& Owner
 	return Success ? EBTNodeResult::InProgress : EBTNodeResult::Failed;
 }
 
-void UInfomorph_Attack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
+void UInfomorph_HeavyAttack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
 {
 	AInfomorphBaseAIController* InfomorphAIController = Cast<AInfomorphBaseAIController>(OwnerComp.GetAIOwner());
 	if(InfomorphAIController == nullptr)
@@ -35,7 +35,7 @@ void UInfomorph_Attack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeM
 	}
 }
 
-void UInfomorph_Attack::OnGameplayTaskActivated(UGameplayTask& Task)
+void UInfomorph_HeavyAttack::OnGameplayTaskActivated(UGameplayTask& Task)
 {
 	Super::OnGameplayTaskActivated(Task);
 }

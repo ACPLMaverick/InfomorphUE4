@@ -421,6 +421,11 @@ float AInfomorphUE4Character::TakeDamage(float DamageAmount, FDamageEvent const&
 		}
 	}
 
+	if(GetController()->IsA<AInfomorphPlayerController>())
+	{
+		ActualDamage *= (1.0f - CharacterStats.ConsciousnessArmorWhenPossessed);
+	}
+
 	CharacterStats.CurrentEnergy = FMath::Clamp(CharacterStats.CurrentEnergy - EnergyLost, 0.0f, CharacterStats.BaseEnergy);
 	LastActionTime = GetWorld()->GetRealTimeSeconds();
 	CharacterStats.CurrentConsciousness = FMath::Clamp(CharacterStats.CurrentConsciousness - ActualDamage, 0.0f, CharacterStats.BaseConsciousness);

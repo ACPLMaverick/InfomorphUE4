@@ -6,10 +6,8 @@
 #include "InfomorphUE4.h"
 #include "Perception/AISense_Damage.h"
 
-// Sets default values
 AInfomorphWeapon::AInfomorphWeapon(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
 	if(RootComponent == nullptr)
@@ -24,7 +22,6 @@ AInfomorphWeapon::AInfomorphWeapon(const FObjectInitializer& ObjectInitializer) 
 	WeaponMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 }
 
-// Called when the game starts or when spawned
 void AInfomorphWeapon::BeginPlay()
 {
 	Super::BeginPlay();
@@ -59,24 +56,33 @@ void AInfomorphWeapon::OnWeaponBeginOverlap(UPrimitiveComponent* OverlappedCompo
 		return;
 	}
 
+	if(IgnoredActors.Contains(OtherCharacter))
+	{
+		//Prevent from double hitting!
+		return;
+	}
+
 	OtherCharacter->TakeDamage(CurrentDamage, FDamageEvent(), ParentCharacter->GetController(), ParentCharacter);
 	UAISense_Damage::ReportDamageEvent(GetWorld(), OtherCharacter, ParentCharacter, CurrentDamage, WeaponMesh->GetComponentLocation(), SweepResult.Location);
+	//To prevent double hitting!
+	IgnoredActors.Add(OtherCharacter);
 }
 
-// Called every frame
 void AInfomorphWeapon::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
 }
 
 void AInfomorphWeapon::EnableCollision()
 {
 	WeaponMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	WeaponMesh->bGenerateOverlapEvents = true;
+	IgnoredActors.Reset(IgnoredActors.Num());
 }
 
 void AInfomorphWeapon::DisableCollision()
 {
 	WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	WeaponMesh->bGenerateOverlapEvents = false;
 }
 
