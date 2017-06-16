@@ -2,8 +2,12 @@
 
 #include "Infomorph_Block.h"
 #include "InfomorphBaseAIController.h"
+#include "InfomorphUE4Character.h"
 #include "InfomorphUE4.h"
 #include "Engine/World.h"
+
+#include "GameFramework/CharacterMovementComponent.h"
+#include "BehaviorTree/BlackboardComponent.h"
 
 UInfomorph_Block::UInfomorph_Block(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -28,6 +32,13 @@ EBTNodeResult::Type UInfomorph_Block::ExecuteTask(UBehaviorTreeComponent& OwnerC
 
 	MyMemory->LastBlockTime = CurrentTime;
 	MyMemory->RemainingTime = FMath::FRandRange(FMath::Max(0.0f, BlockTime - RandomDeviation), (BlockTime + RandomDeviation));
+	
+	AInfomorphUE4Character* Character = Cast<AInfomorphUE4Character>(InfomorphAIController->GetPawn());
+	if(Character != nullptr)
+	{
+		MyMemory->PreviousMaxSpeed = Character->GetCharacterMovement()->MaxWalkSpeed;
+		Character->GetCharacterMovement()->MaxWalkSpeed *= 0.5f;
+	}
 
 	return InfomorphAIController->StartBlock() ? EBTNodeResult::InProgress : EBTNodeResult::Failed;
 }
@@ -53,6 +64,21 @@ void UInfomorph_Block::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMe
 	{
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 	}
+
+	AInfomorphBaseAIController* InfomorphAIController = Cast<AInfomorphBaseAIController>(OwnerComp.GetAIOwner());
+	if(InfomorphAIController == nullptr)
+	{
+		FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
+	}
+	AActor* Target = Cast<AActor>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(TargetKey.SelectedKeyName));
+	AInfomorphUE4Character* Character = Cast<AInfomorphUE4Character>(InfomorphAIController->GetPawn());
+	if(Character != nullptr && Target != nullptr)
+	{
+		if(FVector::Dist(Character->GetActorLocation(), Target->GetActorLocation()) > TargetDistanceFromTarget)
+		{
+			InfomorphAIController->MoveToLocation(Target->GetActorLocation(), TargetDistanceFromTarget);
+		}
+	}
 }
 
 void UInfomorph_Block::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, EBTNodeResult::Type TaskResult)
@@ -61,6 +87,13 @@ void UInfomorph_Block::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* 
 	if(InfomorphAIController != nullptr)
 	{
 		InfomorphAIController->EndBlock();
+
+		AInfomorphUE4Character* Character = Cast<AInfomorphUE4Character>(InfomorphAIController->GetPawn());
+		if(Character != nullptr)
+		{
+			FBlockMemory* MyMemory = (FBlockMemory*)NodeMemory;
+			Character->GetCharacterMovement()->MaxWalkSpeed = MyMemory->PreviousMaxSpeed;
+		}
 	}
 }
 

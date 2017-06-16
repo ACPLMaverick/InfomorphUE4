@@ -21,11 +21,17 @@ protected:
 	UPROPERTY(config, Category = Node, EditAnywhere, meta = (ClampMin = "0.0", UIMin = "0.0"))
 		float MaxDistanceFromInitLocation;
 
+	UPROPERTY(config, Category = Node, EditAnywhere)
+		FBlackboardKeySelector ChaseOffsetKey;
+
+	UPROPERTY(config, Category = Node, EditAnywhere)
+		bool bGenerateChaseOffset;
+
 private:
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 
 protected:
-	EBTNodeResult::Type PerformMove(class AInfomorphBaseAIController* InfomorphAIController, AActor* Target);
+	EBTNodeResult::Type PerformMove(class AInfomorphBaseAIController* InfomorphAIController, AActor* Target, const FVector& ChaseOffset);
 	virtual void TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
 
 public:

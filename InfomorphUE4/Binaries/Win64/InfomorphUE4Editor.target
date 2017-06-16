@@ -17,15 +17,15 @@
 	"BuildProducts" :
 	[
 		{
-			"Path" : "$(ProjectDir)/Binaries/Win64/UE4Editor-InfomorphUE4-9796.dll",
+			"Path" : "$(ProjectDir)/Binaries/Win64/UE4Editor-InfomorphUE4-765.dll",
 			"Type" : "DynamicLibrary"
 		},
 		{
-			"Path" : "$(ProjectDir)/Binaries/Win64/UE4Editor-InfomorphUE4-9796.pdb",
+			"Path" : "$(ProjectDir)/Binaries/Win64/UE4Editor-InfomorphUE4-765.pdb",
 			"Type" : "SymbolFile"
 		},
 		{
-			"Path" : "$(ProjectDir)/Intermediate/Build/Win64/UE4Editor/Development/UE4Editor-InfomorphUE4-9796.lib",
+			"Path" : "$(ProjectDir)/Intermediate/Build/Win64/UE4Editor/Development/UE4Editor-InfomorphUE4-765.lib",
 			"Type" : "ImportLibrary"
 		},
 		{
