@@ -7,6 +7,8 @@
 #include "Components/StaticMeshComponent.h"
 #include "Curves/CurveFloat.h"
 #include "Components/ArrowComponent.h"
+#include "Sound/SoundBase.h"
+#include "Kismet/GameplayStatics.h"
 
 void AInfomorphInteractableDoors::OnNotCloseVolumeBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
@@ -136,6 +138,7 @@ void AInfomorphInteractableDoors::Tick(float DeltaSeconds)
 			bAreClosing = true;
 			bAreOpened = false;
 			ClosingTime = 0.0f;
+			UGameplayStatics::PlaySoundAtLocation(GetWorld(), OpenCloseSound, GetActorLocation());
 		}
 	}
 
@@ -178,6 +181,8 @@ void AInfomorphInteractableDoors::Interact(AInfomorphUE4Character* Character)
 
 	LeftWingsOpenedRotation = LeftWingsClosedRotation + FRotator(0.0f, Multiplier * OpenAngle, 0.0f);
 	RightWingsOpenedRotation = RightWingsClosedRotation + FRotator(0.0f, Multiplier * -OpenAngle, 0.0f);
+
+	UGameplayStatics::PlaySoundAtLocation(GetWorld(), OpenCloseSound, GetActorLocation());
 }
 
 void AInfomorphInteractableDoors::StopInteracting()
