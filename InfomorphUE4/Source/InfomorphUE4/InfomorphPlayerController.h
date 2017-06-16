@@ -141,6 +141,12 @@ public:
 		return CurrentSelectedSkillIndex < Skills.Num() ? Skills[CurrentSelectedSkillIndex].Skill : nullptr;
 	}
 
+	UFUNCTION(BlueprintCallable, Category = Skills)
+		FORCEINLINE int32 GetCurrentSkillIndex() const
+	{
+		return CurrentSelectedSkillIndex;
+	}
+
 	UFUNCTION(BlueprintCallable, Category = Interaction)
 		FORCEINLINE bool IsInteractionPossible() const
 	{
