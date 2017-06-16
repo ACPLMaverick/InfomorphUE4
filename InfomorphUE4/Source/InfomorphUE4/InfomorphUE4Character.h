@@ -173,6 +173,11 @@ public:
 	void SetInteractionTarget(USceneComponent* NewInteractionTarget);
 	float CalculateTargetYaw(const FRotator& CurrentRotation, const FRotator& TargetRotation, float LerpT) const;
 
+	UFUNCTION(BlueprintNativeEvent, Category = Camera)
+		void OnCameraLocked(AActor* NewTarget);
+	UFUNCTION(BlueprintNativeEvent, Category = Camera)
+		void OnCameraUnlocked(AActor* OldTarget);
+
 	UFUNCTION(BlueprintCallable, Category = Attack)
 		void EnableWeaponCollision();
 	UFUNCTION(BlueprintCallable, Category = Attack)

@@ -603,12 +603,20 @@ void AInfomorphUE4Character::SpecialAbility()
 
 bool AInfomorphUE4Character::LockCameraOnTarget(AActor* Target)
 {
-	CameraTarget = Target;
-	if(CameraTarget == nullptr)
+	if(CameraTarget != nullptr && CameraTarget == Target)
 	{
-		UnlockCamera();
+		return true;
+	}
+
+	if(Target == nullptr)
+	{
 		return false;
 	}
+
+	UnlockCamera();
+
+	CameraTarget = Target;
+	OnCameraLocked(CameraTarget);
 
 	bIsCameraLocked = true;
 	LockedCameraTimer = 0.0f;
@@ -619,6 +627,10 @@ bool AInfomorphUE4Character::LockCameraOnTarget(AActor* Target)
 
 void AInfomorphUE4Character::UnlockCamera()
 {
+	if(CameraTarget != nullptr)
+	{
+		OnCameraUnlocked(CameraTarget);
+	}
 	bIsCameraLocked = false;
 	CameraTarget = nullptr;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
@@ -706,6 +718,16 @@ float AInfomorphUE4Character::CalculateTargetYaw(const FRotator& CurrentRotation
 	return FMath::Lerp(CurrentRotation.Yaw, TargetYaw, FMath::Clamp(LerpT, 0.0f, 1.0f));
 }
 
+void AInfomorphUE4Character::OnCameraLocked_Implementation(AActor* NewTarget)
+{
+	LogOnScreen(FString::Printf(TEXT("Locked on: %s"), *NewTarget->GetName()));
+}
+
+void AInfomorphUE4Character::OnCameraUnlocked_Implementation(AActor* OldTarget)
+{
+	LogOnScreen(FString::Printf(TEXT("Unlocked from: %s"), *OldTarget->GetName()));
+}
+
 void AInfomorphUE4Character::EnableWeaponCollision()
 {
 	if(CurrentWeapon != nullptr)
@@ -729,5 +751,5 @@ FVector AInfomorphUE4Character::GetEyesLocation() const
 
 FVector AInfomorphUE4Character::GetEyesDirection() const
 {
-	return FollowCamera != nullptr ? FollowCamera->GetComponentRotation().Vector() : GetActorRotation().Vector();
+	return CameraBoom != nullptr ? CameraBoom->GetComponentRotation().Vector() : GetActorRotation().Vector();
 }
