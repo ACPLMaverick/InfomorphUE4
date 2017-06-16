@@ -312,6 +312,11 @@ public:
 	{
 		return CharacterStats.BaseEnergy;
 	}
+	UFUNCTION(BlueprintCallable, Category = Utility)
+		FORCEINLINE UMaterialInstanceDynamic* GetMaterialInstance() const
+	{
+		return MaterialInstance;
+	}
 
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }

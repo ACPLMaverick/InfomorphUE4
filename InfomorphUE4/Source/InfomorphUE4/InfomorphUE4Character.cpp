@@ -270,7 +270,6 @@ AInfomorphUE4Character::AInfomorphUE4Character()
 
 void AInfomorphUE4Character::BeginPlay()
 {
-	Super::BeginPlay();
 	MaterialInstance = UMaterialInstanceDynamic::Create(GetMesh()->GetMaterial(0), GetMesh());
 
 	if(MaterialInstance != nullptr)
@@ -302,6 +301,8 @@ void AInfomorphUE4Character::BeginPlay()
 	ResetState();
 
 	InitialLocation = GetActorLocation();
+
+	Super::BeginPlay();
 }
 
 void AInfomorphUE4Character::Tick(float DeltaSeconds)
