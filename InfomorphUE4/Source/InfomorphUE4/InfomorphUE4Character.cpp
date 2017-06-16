@@ -249,6 +249,8 @@ AInfomorphUE4Character::AInfomorphUE4Character()
 	InteractionSphere->SetupAttachment(RootComponent);
 	InteractionSphere->SetSphereRadius(400.0f);
 	InteractionSphere->bGenerateOverlapEvents = true;
+	InteractionSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	InteractionSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Overlap);
 
 	Light = CreateDefaultSubobject<UPointLightComponent>(TEXT("Light"));
 	Light->SetupAttachment(GetMesh(), "LightSocket");
@@ -336,7 +338,6 @@ void AInfomorphUE4Character::Tick(float DeltaSeconds)
 
 	if(Controller != nullptr && Controller->IsA<AInfomorphPlayerController>())
 	{
-		LogOnScreen(12345, FColor::Green, FString::Printf(TEXT("Consciousness: %.3f, Energy: %.3f"), CharacterStats.CurrentConsciousness, CharacterStats.CurrentEnergy));
 		CurrentMultiplier += DeltaSeconds;
 	}
 	else

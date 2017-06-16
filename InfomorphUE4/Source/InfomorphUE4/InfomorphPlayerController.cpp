@@ -489,11 +489,6 @@ void AInfomorphPlayerController::LookForInteractables(float DeltaSeconds)
 			CurrentInteractable = Interactable;
 		}
 	}
-
-	if(CurrentInteractable != nullptr)
-	{
-		LogOnScreen(21, DeltaSeconds, FColor::Cyan, FString("CurrentInteractable: ").Append(CurrentInteractable->GetName()));
-	}
 }
 
 void AInfomorphPlayerController::TryLockCamera(bool bOnlyIfCameraLocked)
@@ -610,17 +605,6 @@ void AInfomorphPlayerController::Tick(float DeltaSeconds)
 	FColor LogColor = FColor::Yellow;
 
 	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
-	if(PossessedCharacter != nullptr && PossessedCharacter->GetRatioRemainingToActivateSpecialAttack() > 0.0f)
-	{
-		LogColor = FColor(125, 125, 125, 255);
-	}
-	LogOnScreen(2, LogColor, FString::Printf(TEXT("Special attack, ratio: %.4f"), PossessedCharacter->GetRatioRemainingToActivateSpecialAttack()));
-
-	LogColor = FColor::Yellow;
-	if(!Skills[CurrentSelectedSkillIndex].Skill->CanBeUsed())
-	{
-		LogColor = FColor(125, 125, 125, 255);
-	}
 
 	if(PossessedCharacter != nullptr && !PossessedCharacter->IsDead())
 	{
@@ -631,7 +615,6 @@ void AInfomorphPlayerController::Tick(float DeltaSeconds)
 		CurrentInteractable = nullptr;
 	}
 
-	LogOnScreen(1, LogColor, Skills[CurrentSelectedSkillIndex].SkillName.ToString().Append(FString::Printf(TEXT(", ratio: %.4f"), GetCurrentSkillRemainingRatio())));
 	if(IsUsingSkill())
 	{
 		Skills[CurrentSelectedSkillIndex].Skill->Tick(DeltaSeconds);

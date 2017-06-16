@@ -6,10 +6,12 @@
 #include "InfomorphUE4.h"
 
 #include "BehaviorTree/BlackboardComponent.h"
+#include "DrawDebugHelpers.h"
 
 UInfomorph_ChaseTarget::UInfomorph_ChaseTarget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	bNotifyTick = true;
+	bGenerateChaseOffset = true;
 }
 
 void UInfomorph_ChaseTarget::OnGameplayTaskActivated(UGameplayTask& Task)
@@ -36,7 +38,13 @@ EBTNodeResult::Type UInfomorph_ChaseTarget::ExecuteTask(UBehaviorTreeComponent& 
 		return EBTNodeResult::Failed;
 	}
 
-	EBTNodeResult::Type NodeResult = PerformMove(InfomorphAIController, TargetActor);
+	if(bGenerateChaseOffset)
+	{
+		FVector ChaseOffset = FRotator(0.0f, FMath::FRandRange(-80.0f, 80.0f), 0.0f).RotateVector(TargetActor->GetActorForwardVector()) * AcceptableRadius * 0.8f;
+		OwnerComp.GetBlackboardComponent()->SetValueAsVector(ChaseOffsetKey.SelectedKeyName, ChaseOffset);
+	}
+
+	EBTNodeResult::Type NodeResult = PerformMove(InfomorphAIController, TargetActor, OwnerComp.GetBlackboardComponent()->GetValueAsVector(ChaseOffsetKey.SelectedKeyName));
 
 	return NodeResult;
 }
@@ -62,15 +70,15 @@ void UInfomorph_ChaseTarget::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* 
 		FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
 		return;
 	}
-	EBTNodeResult::Type NodeResult = PerformMove(InfomorphAIController, TargetActor);
-
+	EBTNodeResult::Type NodeResult = PerformMove(InfomorphAIController, TargetActor, OwnerComp.GetBlackboardComponent()->GetValueAsVector(ChaseOffsetKey.SelectedKeyName));
+	
 	if(NodeResult != EBTNodeResult::InProgress)
 	{
 		FinishLatentTask(OwnerComp, NodeResult);
 	}
 }
 
-EBTNodeResult::Type UInfomorph_ChaseTarget::PerformMove(AInfomorphBaseAIController* InfomorphAIController, AActor* Target)
+EBTNodeResult::Type UInfomorph_ChaseTarget::PerformMove(AInfomorphBaseAIController* InfomorphAIController, AActor* Target, const FVector& ChaseOffset)
 {
 	FVector TargetLocation = Target->GetActorLocation();
 
@@ -82,11 +90,6 @@ EBTNodeResult::Type UInfomorph_ChaseTarget::PerformMove(AInfomorphBaseAIControll
 	
 	FVector InitLocation = InfomorphCharacter->GetInitialLocation();
 	FVector SelfLocation = InfomorphCharacter->GetActorLocation();
-
-	if(FVector::Dist(SelfLocation, InitLocation) >= MaxDistanceFromInitLocation)
-	{
-		return EBTNodeResult::Failed;
-	}
 
 	if(FVector::Dist(SelfLocation, TargetLocation) < AcceptableRadius)
 	{

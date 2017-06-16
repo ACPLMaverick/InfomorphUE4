@@ -73,6 +73,7 @@ AInfomorphInteractableDoors::AInfomorphInteractableDoors(const FObjectInitialize
 	DoorsNotCloseVolume->SetupAttachment(RootComponent);
 	DoorsNotCloseVolume->SetRelativeLocation(FVector(0.0f, 0.0f, 100.0f));
 	DoorsNotCloseVolume->bGenerateOverlapEvents = true;
+	DoorsNotCloseVolume->SetCollisionProfileName("WorldStatic");
 	DoorsNotCloseVolume->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 
 	LeftWingsRoot = CreateDefaultSubobject<USceneComponent>(TEXT("LeftWingsRoot"));
