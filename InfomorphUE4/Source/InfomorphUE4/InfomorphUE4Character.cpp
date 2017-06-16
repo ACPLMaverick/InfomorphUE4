@@ -249,7 +249,7 @@ AInfomorphUE4Character::AInfomorphUE4Character()
 	InteractionSphere->bGenerateOverlapEvents = true;
 
 	Light = CreateDefaultSubobject<UPointLightComponent>(TEXT("Light"));
-	Light->SetupAttachment(RootComponent);
+	Light->SetupAttachment(GetMesh(), "LightSocket");
 	Light->CastShadows = 0;
 
 	bIsInStealthMode = false;

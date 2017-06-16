@@ -19,6 +19,9 @@ protected:
 		float AcceptableRadius;
 	
 	UPROPERTY(config, Category = Node, EditAnywhere)
+		float PatrolSpeed;
+
+	UPROPERTY(config, Category = Node, EditAnywhere)
 		FBlackboardKeySelector TargetLocationKey;
 
 	UPROPERTY(config, Category = Node, EditAnywhere)
@@ -30,7 +33,14 @@ private:
 protected:
 	EBTNodeResult::Type PerformMove(class AInfomorphBaseAIController* InfomorphAIController, const FVector& TargetLocation);
 	virtual void TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
+	virtual void OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, EBTNodeResult::Type TaskResult);
+	virtual uint16 GetInstanceMemorySize() const override;
 
 public:
 	virtual void OnGameplayTaskActivated(class UGameplayTask& Task);
+};
+
+struct FWalkToMemory
+{
+	float PreviousMaxWalkingSpeed;
 };
