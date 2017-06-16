@@ -161,7 +161,7 @@ void AInfomorphPlayerController::PerformEndBlock()
 	}
 
 	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
-	if(PossessedCharacter != nullptr && !PossessedCharacter->IsActionsDisabled())
+	if(PossessedCharacter != nullptr)
 	{
 		PossessedCharacter->EndBlock();
 	}

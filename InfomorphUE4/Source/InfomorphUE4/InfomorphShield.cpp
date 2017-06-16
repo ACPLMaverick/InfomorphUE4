@@ -2,6 +2,7 @@
 
 #include "InfomorphShield.h"
 #include "Components/StaticMeshComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 AInfomorphShield::AInfomorphShield()
@@ -17,7 +18,8 @@ AInfomorphShield::AInfomorphShield()
 	ShieldMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ShieldMesh"));
 	ShieldMesh->SetupAttachment(RootComponent);
 	ShieldMesh->bGenerateOverlapEvents = false;
-	ShieldMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	ShieldMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Overlap);
+	ShieldMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 
 }
 
@@ -33,5 +35,10 @@ void AInfomorphShield::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+}
+
+void AInfomorphShield::PlayHitSound()
+{
+	UGameplayStatics::PlaySoundAtLocation((UObject*)GetWorld(), HitSound, GetActorLocation());
 }
 

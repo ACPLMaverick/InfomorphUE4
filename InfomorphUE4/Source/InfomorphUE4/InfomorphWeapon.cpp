@@ -56,6 +56,14 @@ void AInfomorphWeapon::OnWeaponBeginOverlap(UPrimitiveComponent* OverlappedCompo
 		return;
 	}
 
+	AController* Controller = ParentCharacter->GetController();
+	AController* OtherController = OtherCharacter->GetController();
+	if(Controller->IsA<AAIController>() && OtherController->IsA<AAIController>())
+	{
+		//Friendly fire off!
+		return;
+	}
+
 	if(IgnoredActors.Contains(OtherCharacter))
 	{
 		//Prevent from double hitting!
