@@ -338,7 +338,6 @@ void AInfomorphUE4Character::Tick(float DeltaSeconds)
 
 	if(Controller != nullptr && Controller->IsA<AInfomorphPlayerController>())
 	{
-		LogOnScreen(12345, FColor::Green, FString::Printf(TEXT("Consciousness: %.3f, Energy: %.3f"), CharacterStats.CurrentConsciousness, CharacterStats.CurrentEnergy));
 		CurrentMultiplier += DeltaSeconds;
 	}
 	else
