@@ -114,17 +114,22 @@ void AInfomorphBaseAIController::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 	AInfomorphUE4Character* InfomorphCharacter = Cast<AInfomorphUE4Character>(GetPawn());
-	if(InfomorphCharacter != nullptr && InfomorphCharacter->IsDead())
+	if(InfomorphCharacter != nullptr)
 	{
-		if(BrainComponent != nullptr)
+		if(InfomorphCharacter->IsDead())
 		{
-			BrainComponent->StopLogic("Death");
+			if(BrainComponent != nullptr && BrainComponent->IsRunning())
+			{
+				BrainComponent->StopLogic("Death");
+			}
 		}
-	}
-
-	if(Blackboard != nullptr)
-	{
-		Blackboard->SetValueAsVector("InitialLocation", InfomorphCharacter->GetInitialLocation());
+		else
+		{
+			if(Blackboard != nullptr)
+			{
+				Blackboard->SetValueAsVector("InitialLocation", InfomorphCharacter->GetInitialLocation());
+			}
+		}
 	}
 }
 
