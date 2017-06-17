@@ -153,6 +153,12 @@ public:
 		return CurrentInteractable != nullptr && CurrentInteractable->IsInteractionPossible();
 	}
 
+	UFUNCTION(BlueprintCallable, Category = Interaction)
+		FORCEINLINE AInfomorphInteractable* GetCurrentInteractable() const
+	{
+		return CurrentInteractable;
+	}
+
 	//Returns float from 0 to 1, where 1 means that whole cooldown remains and 0 means that skill is ready
 	UFUNCTION(BlueprintCallable, Category = Skills)
 	FORCEINLINE float GetCurrentSkillRemainingRatio() const

@@ -330,9 +330,11 @@ public:
 		return MaterialInstance;
 	}
 
+	UFUNCTION(BlueprintCallable, Category = Utility)
+		FORCEINLINE AActor* GetCameraTarget() const { return CameraTarget; }
+
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
-	FORCEINLINE AActor* GetCameraTarget() const { return CameraTarget; }
 	FORCEINLINE const FCharacterStats& GetCharacterStats() const { return CharacterStats; }
 	FORCEINLINE class USphereComponent* GetInteractionSphere() const { return InteractionSphere; }
 };
