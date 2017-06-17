@@ -745,12 +745,10 @@ float AInfomorphUE4Character::CalculateTargetYaw(const FRotator& CurrentRotation
 
 void AInfomorphUE4Character::OnCameraLocked_Implementation(AActor* NewTarget)
 {
-	LogOnScreen(FString::Printf(TEXT("Locked on: %s"), *NewTarget->GetName()));
 }
 
 void AInfomorphUE4Character::OnCameraUnlocked_Implementation(AActor* OldTarget)
 {
-	LogOnScreen(FString::Printf(TEXT("Unlocked from: %s"), *OldTarget->GetName()));
 }
 
 void AInfomorphUE4Character::EnableWeaponCollision()
