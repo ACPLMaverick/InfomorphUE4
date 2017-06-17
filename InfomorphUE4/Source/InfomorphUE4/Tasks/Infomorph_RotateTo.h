@@ -17,6 +17,8 @@ class INFOMORPHUE4_API UInfomorph_RotateTo : public UBTTaskNode
 protected:
 	UPROPERTY(config, Category = Node, EditAnywhere, meta = (ClampMin = "0.0", UIMin = "0.0"))
 		float RotateSpeed;
+	UPROPERTY(config, Category = Node, EditAnywhere, meta = (ClampMin = "0.0", UIMin = "0.0"))
+		float AcceptableAngle;
 
 	UPROPERTY(config, Category = Node, EditAnywhere)
 		FBlackboardKeySelector TargetKey;

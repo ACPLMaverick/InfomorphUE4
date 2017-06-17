@@ -8,6 +8,7 @@
 UInfomorph_RotateTo::UInfomorph_RotateTo(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	bNotifyTick = true;
+	AcceptableAngle = 5.0f;
 }
 
 FString UInfomorph_RotateTo::GetStaticDescription() const
@@ -85,7 +86,7 @@ EBTNodeResult::Type UInfomorph_RotateTo::PerformRotate(AInfomorphUE4Character* C
 	CurrentRotation.Yaw = FMath::FInterpTo(CurrentRotation.Yaw, TargetYaw, DeltaSeconds, RotateSpeed);;
 	ControlledActor->SetActorRotation(CurrentRotation);
 
-	if(FMath::Abs(TargetYaw - CurrentRotation.Yaw) < 5.0f)
+	if(FMath::Abs(TargetYaw - CurrentRotation.Yaw) < AcceptableAngle)
 	{
 		return EBTNodeResult::Succeeded;
 	}
