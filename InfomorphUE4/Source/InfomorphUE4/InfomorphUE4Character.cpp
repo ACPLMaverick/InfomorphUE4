@@ -207,6 +207,16 @@ void AInfomorphUE4Character::ConfusionEnd()
 void AInfomorphUE4Character::DestroyActor()
 {
 	Destroy();
+	if(CurrentWeapon != nullptr)
+	{
+		CurrentWeapon->Destroy();
+		CurrentWeapon = nullptr;
+	}
+	if(CurrentShield != nullptr)
+	{
+		CurrentShield->Destroy();
+		CurrentShield = nullptr;
+	}
 }
 
 bool AInfomorphUE4Character::IsTargetVisible(const FVector& Direction) const
@@ -244,7 +254,7 @@ AInfomorphUE4Character::AInfomorphUE4Character()
 	// Configure character movement
 	GetCharacterMovement()->bOrientRotationToMovement = true; // Character moves in the direction of input...	
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 540.0f, 0.0f); // ...at this rotation rate
-	GetCharacterMovement()->JumpZVelocity = 600.f;
+	GetCharacterMovement()->JumpZVelocity = 400.f;
 	GetCharacterMovement()->AirControl = 0.2f;
 	GetCharacterMovement()->MaxWalkSpeed = 375.0f;
 	GetCharacterMovement()->MaxWalkSpeedCrouched = 100.0f;
@@ -745,12 +755,10 @@ float AInfomorphUE4Character::CalculateTargetYaw(const FRotator& CurrentRotation
 
 void AInfomorphUE4Character::OnCameraLocked_Implementation(AActor* NewTarget)
 {
-	LogOnScreen(FString::Printf(TEXT("Locked on: %s"), *NewTarget->GetName()));
 }
 
 void AInfomorphUE4Character::OnCameraUnlocked_Implementation(AActor* OldTarget)
 {
-	LogOnScreen(FString::Printf(TEXT("Unlocked from: %s"), *OldTarget->GetName()));
 }
 
 void AInfomorphUE4Character::EnableWeaponCollision()
