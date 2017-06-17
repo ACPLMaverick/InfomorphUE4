@@ -13,3 +13,8 @@ AInfomorphUE4GameMode::AInfomorphUE4GameMode()
 		DefaultPawnClass = PlayerPawnBPClass.Class;
 	}
 }
+
+void AInfomorphUE4GameMode::ResetLevel()
+{
+	ProcessServerTravel("?reset");
+}

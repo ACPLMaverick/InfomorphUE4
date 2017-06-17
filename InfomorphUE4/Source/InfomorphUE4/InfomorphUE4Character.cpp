@@ -176,6 +176,29 @@ void AInfomorphUE4Character::ProcessInteractionTarget(float DeltaSeconds)
 	AddMovementInput(Direction);
 }
 
+void AInfomorphUE4Character::ProcessPossessionMaterial(float DeltaSeconds)
+{
+	float CurrentMultiplier = 0.0f;
+	if(MaterialInstance != nullptr)
+	{
+		MaterialInstance->GetScalarParameterValue("PossessedMultiplier", CurrentMultiplier);
+	}
+
+	if(Controller != nullptr && Controller->IsA<AInfomorphPlayerController>())
+	{
+		CurrentMultiplier += DeltaSeconds;
+	}
+	else
+	{
+		CurrentMultiplier -= DeltaSeconds;
+	}
+
+	if(MaterialInstance != nullptr)
+	{
+		MaterialInstance->SetScalarParameterValue("PossessedMultiplier", FMath::Clamp(CurrentMultiplier, 0.0f, 1.0f));
+	}
+}
+
 void AInfomorphUE4Character::ConfusionEnd()
 {
 	CharacterStats.bIsConfused = false;
@@ -184,11 +207,6 @@ void AInfomorphUE4Character::ConfusionEnd()
 void AInfomorphUE4Character::DestroyActor()
 {
 	Destroy();
-}
-
-void AInfomorphUE4Character::RestartLevel()
-{
-	GetWorld()->ServerTravel("?reset");
 }
 
 bool AInfomorphUE4Character::IsTargetVisible(const FVector& Direction) const
@@ -325,29 +343,11 @@ void AInfomorphUE4Character::Tick(float DeltaSeconds)
 		CharacterStats.CurrentEnergy = FMath::Clamp(CharacterStats.CurrentEnergy, 0.0f, CharacterStats.BaseEnergy);
 	}
 
+	ProcessPossessionMaterial(DeltaSeconds);
+
 	if(InteractionTarget != nullptr)
 	{
 		ProcessInteractionTarget(DeltaSeconds);
-	}
-
-	float CurrentMultiplier = 0.0f;
-	if(MaterialInstance != nullptr)
-	{
-		MaterialInstance->GetScalarParameterValue("PossessedMultiplier", CurrentMultiplier);
-	}
-
-	if(Controller != nullptr && Controller->IsA<AInfomorphPlayerController>())
-	{
-		CurrentMultiplier += DeltaSeconds;
-	}
-	else
-	{
-		CurrentMultiplier -= DeltaSeconds;
-	}
-
-	if(MaterialInstance != nullptr)
-	{
-		MaterialInstance->SetScalarParameterValue("PossessedMultiplier", FMath::Clamp(CurrentMultiplier, 0.0f, 1.0f));
 	}
 
 	if(bIsDodging)
@@ -405,6 +405,11 @@ void AInfomorphUE4Character::PossessedBy(AController* NewController)
 
 float AInfomorphUE4Character::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
+	if(IsDead())
+	{
+		return 0.0f;
+	}
+
 	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
 	if(ActualDamage <= 0.0f)
@@ -444,15 +449,16 @@ float AInfomorphUE4Character::TakeDamage(float DamageAmount, FDamageEvent const&
 
 	if(bWasHit)
 	{
+		ResetAttacks();
 		AInfomorphBaseAIController* InfomorphAIController = Cast<AInfomorphBaseAIController>(GetController());
-		if(InfomorphAIController)
+		if(InfomorphAIController != nullptr)
 		{
 			InfomorphAIController->PauseBehaviorTree("Hit");
 		}
 
 		if(IsDead())
 		{
-			UGameplayStatics::PlaySoundAtLocation(GetWorld(), DeathSound, GetActorLocation());
+			Dedigitalize();
 		}
 		else
 		{
@@ -628,12 +634,12 @@ bool AInfomorphUE4Character::LockCameraOnTarget(AActor* Target)
 		return true;
 	}
 
+	UnlockCamera();
+
 	if(Target == nullptr)
 	{
 		return false;
 	}
-
-	UnlockCamera();
 
 	CameraTarget = Target;
 	OnCameraLocked(CameraTarget);
@@ -658,18 +664,17 @@ void AInfomorphUE4Character::UnlockCamera()
 
 void AInfomorphUE4Character::Dedigitalize()
 {
+	UGameplayStatics::PlaySoundAtLocation(GetWorld(), DeathSound, GetActorLocation());
 	AInfomorphPlayerController* InfomorphPC = Cast<AInfomorphPlayerController>(GetController());
 	if(InfomorphPC == nullptr)
 	{
 		//It's AI so call Destroy after dedigitalize
-		//Destroy();
 		GetWorldTimerManager().SetTimer(DedigitalizeTimerHandle, this, &AInfomorphUE4Character::DestroyActor, 3.0f);
 	}
 	else
 	{
 		//It's player so respawn after dedigitialize
-		//GetWorld()->ServerTravel("?reset");
-		GetWorldTimerManager().SetTimer(DedigitalizeTimerHandle, this, &AInfomorphUE4Character::RestartLevel, 3.0f);
+		GetWorldTimerManager().SetTimer(DedigitalizeTimerHandle, GetWorld()->GetAuthGameMode(), &AGameModeBase::ResetLevel, 3.0f);
 	}
 }
 

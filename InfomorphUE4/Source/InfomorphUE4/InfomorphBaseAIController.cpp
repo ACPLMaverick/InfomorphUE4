@@ -25,7 +25,7 @@ void AInfomorphBaseAIController::OnTargetPerceptionUpdated(AActor* Actor, FAISti
 	}
 
 	AInfomorphUE4Character* SensedCharacter = Cast<AInfomorphUE4Character>(Actor);
-	if(SensedCharacter != nullptr)
+	if(SensedCharacter != nullptr && !SensedCharacter->IsDead())
 	{
 		AInfomorphPlayerController* InfomorphPC = Cast<AInfomorphPlayerController>(SensedCharacter->GetController());
 		if(InfomorphPC != nullptr)
@@ -37,6 +37,7 @@ void AInfomorphBaseAIController::OnTargetPerceptionUpdated(AActor* Actor, FAISti
 			}
 			else
 			{
+				Blackboard->SetValueAsVector("LastTargetKnownLocation", SensedCharacter->GetActorLocation());
 				Blackboard->SetValueAsObject("Target", nullptr);
 			}
 		}
@@ -128,6 +129,12 @@ void AInfomorphBaseAIController::Tick(float DeltaSeconds)
 			if(Blackboard != nullptr)
 			{
 				Blackboard->SetValueAsVector("InitialLocation", InfomorphCharacter->GetInitialLocation());
+				
+				AInfomorphUE4Character* TargetCharacter = Cast<AInfomorphUE4Character>(Blackboard->GetValueAsObject("Target"));
+				if(TargetCharacter != nullptr && TargetCharacter->IsDead())
+				{
+					Blackboard->SetValueAsObject("Target", nullptr);
+				}
 			}
 		}
 	}

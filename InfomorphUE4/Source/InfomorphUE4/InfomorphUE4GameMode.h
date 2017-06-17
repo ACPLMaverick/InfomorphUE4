@@ -13,6 +13,8 @@ class AInfomorphUE4GameMode : public AGameModeBase
 
 public:
 	AInfomorphUE4GameMode();
+
+	virtual void ResetLevel() override;
 };
 
 

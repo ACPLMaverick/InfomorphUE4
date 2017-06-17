@@ -143,11 +143,11 @@ public:
 protected:
 	void ProcessCameraLocked(float DeltaSeconds);
 	void ProcessInteractionTarget(float DeltaSeconds);
+	void ProcessPossessionMaterial(float DeltaSeconds);
 
 	void ConfusionEnd();
 
 	void DestroyActor();
-	void RestartLevel();
 
 	bool IsTargetVisible(const FVector& Direction) const;
 

@@ -28,15 +28,15 @@ EBTNodeResult::Type UInfomorph_RotateTo::ExecuteTask(UBehaviorTreeComponent& Own
 
 	AInfomorphUE4Character* ControlledCharacter = Cast<AInfomorphUE4Character>(InfomorphAIController->GetPawn());
 	AInfomorphUE4Character* TargetCharacter = Cast<AInfomorphUE4Character>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(TargetKey.SelectedKeyName));
-
-
-	EBTNodeResult::Type NodeResult = PerformRotate(ControlledCharacter, TargetCharacter, Memory->LerpTime);
-	if(NodeResult == EBTNodeResult::InProgress)
+	if(TargetCharacter != nullptr)
 	{
-		FinishLatentTask(OwnerComp, NodeResult);
+		return PerformRotate(ControlledCharacter, TargetCharacter, Memory->LerpTime);
 	}
-
-	return NodeResult;
+	else
+	{
+		FVector TargetLocation = OwnerComp.GetBlackboardComponent()->GetValueAsVector(TargetKey.SelectedKeyName);
+		return PerformRotate(ControlledCharacter, TargetLocation, Memory->LerpTime);
+	}
 }
 
 uint16 UInfomorph_RotateTo::GetInstanceMemorySize() const
@@ -58,10 +58,17 @@ void UInfomorph_RotateTo::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* Nod
 
 	AInfomorphUE4Character* ControlledCharacter = Cast<AInfomorphUE4Character>(InfomorphAIController->GetPawn());
 	AInfomorphUE4Character* TargetCharacter = Cast<AInfomorphUE4Character>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(TargetKey.SelectedKeyName));
-
-
-	EBTNodeResult::Type NodeResult = PerformRotate(ControlledCharacter, TargetCharacter, Memory->LerpTime);
-	FinishLatentTask(OwnerComp, NodeResult);
+	if(TargetCharacter != nullptr)
+	{
+		EBTNodeResult::Type NodeResult = PerformRotate(ControlledCharacter, TargetCharacter, Memory->LerpTime);
+		FinishLatentTask(OwnerComp, NodeResult);
+	}
+	else
+	{
+		FVector TargetLocation = OwnerComp.GetBlackboardComponent()->GetValueAsVector(TargetKey.SelectedKeyName);
+		EBTNodeResult::Type NodeResult = PerformRotate(ControlledCharacter, TargetLocation, Memory->LerpTime);
+		FinishLatentTask(OwnerComp, NodeResult);
+	}
 }
 
 EBTNodeResult::Type UInfomorph_RotateTo::PerformRotate(AInfomorphUE4Character* ControlledActor, AInfomorphUE4Character* TargetActor, float LerpT)
@@ -71,14 +78,17 @@ EBTNodeResult::Type UInfomorph_RotateTo::PerformRotate(AInfomorphUE4Character* C
 		return EBTNodeResult::Failed;
 	}
 
+	return PerformRotate(ControlledActor, TargetActor->GetActorLocation(), LerpT);
+}
+
+EBTNodeResult::Type UInfomorph_RotateTo::PerformRotate(AInfomorphUE4Character* ControlledActor, const FVector& TargetLocation, float LerpT)
+{
 	if(LerpT > 1.0f)
 	{
 		return EBTNodeResult::Succeeded;
 	}
 
-	FVector Direction = TargetActor->GetActorLocation() - ControlledActor->GetActorLocation();
-	Direction.Z = 0.0f;
-	Direction.Normalize();
+	FVector Direction = TargetLocation - ControlledActor->GetActorLocation();
 
 	FRotator CurrentRotation = ControlledActor->GetActorRotation();
 	CurrentRotation.Yaw = ControlledActor->CalculateTargetYaw(CurrentRotation, Direction.Rotation(), FMath::Clamp(LerpT, 0.0f, 1.0f));

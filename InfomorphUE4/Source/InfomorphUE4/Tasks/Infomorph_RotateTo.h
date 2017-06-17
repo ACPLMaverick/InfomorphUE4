@@ -35,6 +35,7 @@ protected:
 	virtual void TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
 
 	EBTNodeResult::Type PerformRotate(class AInfomorphUE4Character* ControlledActor, class AInfomorphUE4Character* TargetActor, float LerpT);
+	EBTNodeResult::Type PerformRotate(class AInfomorphUE4Character* ControlledActor, const FVector& TargetLocation, float LerpT);
 
 public:
 	virtual void OnGameplayTaskActivated(class UGameplayTask& Task);
