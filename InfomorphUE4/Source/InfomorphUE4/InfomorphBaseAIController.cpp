@@ -30,6 +30,7 @@ void AInfomorphBaseAIController::OnTargetPerceptionUpdated(AActor* Actor, FAISti
 		AInfomorphPlayerController* InfomorphPC = Cast<AInfomorphPlayerController>(SensedCharacter->GetController());
 		if(InfomorphPC != nullptr)
 		{
+			Blackboard->SetValueAsVector("LastTargetKnownLocation", SensedCharacter->GetActorLocation());
 			bIsPlayerNoticed = Stimulus.WasSuccessfullySensed();
 			if(bIsPlayerNoticed)
 			{
@@ -37,7 +38,6 @@ void AInfomorphBaseAIController::OnTargetPerceptionUpdated(AActor* Actor, FAISti
 			}
 			else
 			{
-				Blackboard->SetValueAsVector("LastTargetKnownLocation", SensedCharacter->GetActorLocation());
 				Blackboard->SetValueAsObject("Target", nullptr);
 			}
 		}
