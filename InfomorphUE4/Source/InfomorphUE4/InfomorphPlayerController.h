@@ -38,6 +38,8 @@ protected:
 	float LookMultiplier;
 
 	int32 CurrentSelectedSkillIndex;
+
+	class UInfomorphTutorialWidget* CurrentTutorialWidget;
 	
 protected:
 	void MoveForward(float Value);
@@ -80,6 +82,8 @@ public:
 	void PossessNewCharacter(class AInfomorphUE4Character* NewCharacter);
 
 	void InteractWithCurrentInteractable();
+
+	void SetTutorialWidget(class UInfomorphTutorialWidget* Widget);
 
 	UFUNCTION(BlueprintCallable, Category = Noise)
 		void MakeFootstepNoise();

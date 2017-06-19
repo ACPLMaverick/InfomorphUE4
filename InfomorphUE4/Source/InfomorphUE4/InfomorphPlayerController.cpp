@@ -2,6 +2,7 @@
 
 #include "InfomorphPlayerController.h"
 #include "InfomorphUE4Character.h"
+#include "InfomorphTutorialWidget.h"
 #include "InfomorphUE4.h"
 #include "Camera/CameraComponent.h"
 #include "UObject/UObjectIterator.h"
@@ -211,6 +212,12 @@ void AInfomorphPlayerController::PerformStealthMode()
 
 void AInfomorphPlayerController::PerformInteraction()
 {
+	if(CurrentTutorialWidget != nullptr)
+	{
+		CurrentTutorialWidget->CloseTutorial();
+		return;
+	}
+
 	if(IsUsingSkill())
 	{
 		return;
@@ -383,6 +390,19 @@ void AInfomorphPlayerController::InteractWithCurrentInteractable()
 	if(PossessedCharacter != nullptr)
 	{
 		CurrentInteractable->Interact(PossessedCharacter);
+	}
+}
+
+void AInfomorphPlayerController::SetTutorialWidget(UInfomorphTutorialWidget* Widget)
+{
+	CurrentTutorialWidget = Widget;
+	if(CurrentTutorialWidget != nullptr)
+	{
+		AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
+		if(PossessedCharacter != nullptr)
+		{
+			PossessedCharacter->ResetState();
+		}
 	}
 }
 
