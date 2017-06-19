@@ -202,6 +202,11 @@ void AInfomorphUE4Character::ProcessPossessionMaterial(float DeltaSeconds)
 void AInfomorphUE4Character::ConfusionEnd()
 {
 	CharacterStats.bIsConfused = false;
+	AInfomorphBaseAIController* InfomorphAIController = Cast<AInfomorphBaseAIController>(GetController());
+	if(InfomorphAIController != nullptr)
+	{
+		InfomorphAIController->ResumeBehaviorTree();
+	}
 }
 
 void AInfomorphUE4Character::DestroyActor()

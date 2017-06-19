@@ -96,6 +96,8 @@ protected:
 	float BuildUpTimer;
 	float PossessionTimer;
 
+	class AInfomorphBaseAIController* TargetController;
+
 protected:
 	void OnBuildUpTimerCompleted();
 	void OnPossessionTimerCompleted();

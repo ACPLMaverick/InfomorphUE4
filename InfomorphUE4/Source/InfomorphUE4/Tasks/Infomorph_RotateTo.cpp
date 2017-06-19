@@ -73,6 +73,11 @@ EBTNodeResult::Type UInfomorph_RotateTo::PerformRotate(AInfomorphUE4Character* C
 
 EBTNodeResult::Type UInfomorph_RotateTo::PerformRotate(AInfomorphUE4Character* ControlledActor, const FVector& TargetLocation, float DeltaSeconds)
 {
+	if(ControlledActor == nullptr)
+	{
+		return EBTNodeResult::Failed;
+	}
+
 	FVector Direction = TargetLocation - ControlledActor->GetActorLocation();
 	Direction.Normalize();
 

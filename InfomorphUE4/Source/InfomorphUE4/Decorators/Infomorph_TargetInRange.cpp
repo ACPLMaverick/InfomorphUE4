@@ -28,7 +28,7 @@ bool UInfomorph_TargetInRange::EvaluateOnBlackboard(const UBlackboardComponent& 
 	}
 
 	AInfomorphBaseAIController* InfomorphAIController = Cast<AInfomorphBaseAIController>(Blackboard.GetBrainComponent()->GetAIOwner());
-	if(InfomorphAIController == nullptr)
+	if(InfomorphAIController == nullptr || InfomorphAIController->GetPawn() == nullptr)
 	{
 		return false;
 	}

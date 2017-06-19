@@ -3,6 +3,7 @@
 #include "InfomorphSkillBase.h"
 #include "InfomorphPlayerController.h"
 #include "InfomorphUE4Character.h"
+#include "InfomorphBaseAIController.h"
 #include "InfomorphUE4.h"
 
 //Skill base methods
@@ -40,8 +41,7 @@ void UInfomorphSkillPossession::OnBuildUpTimerCompleted()
 	}
 
 	InfomorphPC->PlayFeedback(PossessingVibrationEffect);
-	InfomorphPC->SetViewTargetWithBlend(CharacterToPossess, PossessionTime, EViewTargetBlendFunction::VTBlend_Cubic);
-	InfomorphPC->GetWorldTimerManager().SetTimer(PossessingTimerHandle, this, &UInfomorphSkillPossession::OnPossessionTimerCompleted, PossessionTime);
+	//InfomorphPC->SetViewTargetWithBlend(CharacterToPossess, PossessionTime, EViewTargetBlendFunction::VTBlend_Cubic);
 	InfomorphPC->GetWorldTimerManager().SetTimer(CheckIfPossessableTimerHandle, this, &UInfomorphSkillPossession::OnCheckIfPossessableTimerCompleted, 0.5f * PossessionTime);
 	PossessionTimer = 0.0f;
 }
@@ -65,15 +65,19 @@ void UInfomorphSkillPossession::OnCheckIfPossessableTimerCompleted()
 	AInfomorphUE4Character* CurrentlyPossessedCharacter = Cast<AInfomorphUE4Character>(InfomorphPC->GetPawn());
 	if(CurrentlyPossessedCharacter != nullptr)
 	{
+		bool bIsPossessable = false;
 		float PossessionChance = CharacterToPossess->GetPossessionChance(CurrentlyPossessedCharacter->GetActorLocation());
-		if(PossessionChance < 1.0f)
+		bIsPossessable = FMath::RandRange(0.0f, 1.0f) <= PossessionChance;
+		if(bIsPossessable)
 		{
-			float Random = FMath::RandRange(0.0f, 1.0f);
-			if(Random > PossessionChance)
-			{
-				CurrentlyPossessedCharacter->Confuse(CurrentlyPossessedCharacter->GetCharacterStats().ConfusionPossessedTime, 0.5f);
-				StopUsing();
-			}
+			float TimerTime = 0.5f * PossessionTime;
+			InfomorphPC->SetViewTargetWithBlend(CharacterToPossess, 0.9f * TimerTime, EViewTargetBlendFunction::VTBlend_Linear);
+			InfomorphPC->GetWorldTimerManager().SetTimer(PossessingTimerHandle, this, &UInfomorphSkillPossession::OnPossessionTimerCompleted, TimerTime);
+		}
+		else
+		{
+			CurrentlyPossessedCharacter->Confuse(CurrentlyPossessedCharacter->GetCharacterStats().ConfusionPossessedTime, 0.5f);
+			StopUsing();
 		}
 	}
 }
@@ -88,7 +92,7 @@ void UInfomorphSkillPossession::Tick(float DeltaSeconds)
 			InfomorphPC->SetMovementMultiplier(1.0f - BuildUpTimer / (BuildUpTime * 0.8f));
 		}
 	}
-	if(PossessingTimerHandle.IsValid())
+	if(PossessingTimerHandle.IsValid() || CheckIfPossessableTimerHandle.IsValid())
 	{
 		PossessionTimer += DeltaSeconds;
 	}
@@ -116,6 +120,12 @@ void UInfomorphSkillPossession::StartUsing(AInfomorphPlayerController* Infomorph
 			CharacterToPossess = Cast<AInfomorphUE4Character>(CurrentlyPossessedCharacter->GetCameraTarget());
 			if(CharacterToPossess != nullptr && !CharacterToPossess->IsDead())
 			{
+				TargetController = Cast<AInfomorphBaseAIController>(CharacterToPossess->GetController());
+				if(TargetController != nullptr)
+				{
+					TargetController->PauseBehaviorTree("Possession");
+				}
+
 				LastUsedTime = FPlatformTime::Seconds();
 
 				InfomorphPC->SetLookMultiplier(0.0f);
@@ -140,10 +150,8 @@ void UInfomorphSkillPossession::StopUsing()
 	InfomorphPC->GetWorldTimerManager().ClearTimer(BuildUpTimerHandle);
 	InfomorphPC->GetWorldTimerManager().ClearTimer(PossessingTimerHandle);
 	InfomorphPC->GetWorldTimerManager().ClearTimer(CheckIfPossessableTimerHandle);
-
-	AInfomorphUE4Character* CurrentlyPossessedCharacter = Cast<AInfomorphUE4Character>(InfomorphPC->GetPawn());
-	if(CurrentlyPossessedCharacter != nullptr)
+	if(TargetController != nullptr)
 	{
-		InfomorphPC->SetViewTargetWithBlend(CurrentlyPossessedCharacter, PossessionTime, EViewTargetBlendFunction::VTBlend_Cubic);
+		TargetController->ResumeBehaviorTree();
 	}
 }
