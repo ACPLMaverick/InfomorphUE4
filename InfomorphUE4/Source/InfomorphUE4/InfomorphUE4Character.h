@@ -274,6 +274,9 @@ public:
 			bIsBlocking = false;
 	}
 
+	UFUNCTION(BlueprintImplementableEvent, Category = Possession)
+		void EventPossessionFailed(AInfomorphUE4Character* CharacterWantedToPossess);
+
 	UFUNCTION(BlueprintCallable, Category = Stats)
 		FORCEINLINE FVector GetInitialLocation() const { return InitialLocation; }
 

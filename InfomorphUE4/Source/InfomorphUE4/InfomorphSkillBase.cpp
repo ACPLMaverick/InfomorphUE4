@@ -76,6 +76,7 @@ void UInfomorphSkillPossession::OnCheckIfPossessableTimerCompleted()
 		}
 		else
 		{
+			CurrentlyPossessedCharacter->EventPossessionFailed(CharacterToPossess);
 			CurrentlyPossessedCharacter->Confuse(CurrentlyPossessedCharacter->GetCharacterStats().ConfusionPossessedTime, 0.5f);
 			StopUsing();
 		}
