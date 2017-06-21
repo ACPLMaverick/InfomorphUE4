@@ -331,9 +331,12 @@ void AInfomorphUE4Character::BeginPlay()
 	}
 
 	CurrentShield = GetWorld()->SpawnActor<AInfomorphShield>(ShieldClass.Get());
-	CurrentShield->AttachToComponent((USceneComponent*)GetMesh(), AttachmentRules, ShieldSocketName);
-	CurrentShield->SetActorRelativeLocation(FVector::ZeroVector);
-	CurrentShield->SetActorRelativeRotation(FQuat::Identity);
+	if(CurrentShield != nullptr)
+	{
+		CurrentShield->AttachToComponent((USceneComponent*)GetMesh(), AttachmentRules, ShieldSocketName);
+		CurrentShield->SetActorRelativeLocation(FVector::ZeroVector);
+		CurrentShield->SetActorRelativeRotation(FQuat::Identity);
+	}
 
 	ResetState();
 
