@@ -322,9 +322,9 @@ void AInfomorphUE4Character::BeginPlay()
 
 	FAttachmentTransformRules AttachmentRules(EAttachmentRule::KeepWorld, false);
 
-	if(CurrentWeapon == nullptr)
+	CurrentWeapon = GetWorld()->SpawnActor<AInfomorphWeapon>(WeaponClass.Get());
+	if(CurrentWeapon != nullptr)
 	{
-		CurrentWeapon = GetWorld()->SpawnActor<AInfomorphWeapon>(WeaponClass.Get());
 		CurrentWeapon->AttachToComponent((USceneComponent*)GetMesh(), AttachmentRules, WeaponSocketName);
 		CurrentWeapon->SetActorRelativeLocation(FVector::ZeroVector);
 		CurrentWeapon->SetActorRelativeRotation(FQuat::Identity);
