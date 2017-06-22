@@ -46,6 +46,8 @@ FCharacterStats::FCharacterStats()
 	SpecialAttackDamage = 40.0f;
 
 	SpecialAttackCooldown = 10.0f;
+
+	bCanEverDodge = true;
 }
 
 void FCharacterStats::Initialize()
@@ -521,7 +523,7 @@ void AInfomorphUE4Character::EndBlock()
 
 void AInfomorphUE4Character::Dodge(const FVector& DodgeDirection)
 {
-	if(CharacterStats.CurrentEnergy - CharacterStats.DodgeEnergyCost < 0.0f)
+	if(!CharacterStats.bCanEverDodge || CharacterStats.CurrentEnergy - CharacterStats.DodgeEnergyCost < 0.0f)
 	{
 		return;
 	}

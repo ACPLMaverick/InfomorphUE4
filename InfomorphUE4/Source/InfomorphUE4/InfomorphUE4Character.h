@@ -56,6 +56,8 @@ public:
 		float SpecialAttackDamage;
 	UPROPERTY(EditAnywhere, Category = Cooldowns)
 		float SpecialAttackCooldown;
+	UPROPERTY(EditAnywhere, Category = Abilities)
+		bool bCanEverDodge;
 
 	float CurrentConsciousness;
 	float CurrentEnergy;

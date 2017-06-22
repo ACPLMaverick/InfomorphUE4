@@ -87,7 +87,7 @@ EBTNodeResult::Type UInfomorph_ChaseTarget::PerformMove(AInfomorphBaseAIControll
 	}
 
 	FVector AICharacterLocation = AICharacter->GetActorLocation();
-	FVector TargetLocation = Target->GetActorLocation() + ChaseOffset;
+	FVector TargetLocation = Target->GetActorLocation();
 	float Distance = FVector::Dist(AICharacterLocation, TargetLocation);
 	if(Distance <= AcceptableRadius)
 	{
