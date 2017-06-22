@@ -151,6 +151,7 @@ void UInfomorphSkillPossession::StopUsing()
 	InfomorphPC->GetWorldTimerManager().ClearTimer(BuildUpTimerHandle);
 	InfomorphPC->GetWorldTimerManager().ClearTimer(PossessingTimerHandle);
 	InfomorphPC->GetWorldTimerManager().ClearTimer(CheckIfPossessableTimerHandle);
+	InfomorphPC->SetViewTargetWithBlend(InfomorphPC->GetPawn(), PossessionTime, EViewTargetBlendFunction::VTBlend_Cubic);
 	if(TargetController != nullptr)
 	{
 		TargetController->ResumeBehaviorTree();
