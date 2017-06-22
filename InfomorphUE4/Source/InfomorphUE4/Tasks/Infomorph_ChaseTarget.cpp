@@ -80,23 +80,25 @@ void UInfomorph_ChaseTarget::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* 
 
 EBTNodeResult::Type UInfomorph_ChaseTarget::PerformMove(AInfomorphBaseAIController* InfomorphAIController, AActor* Target, const FVector& ChaseOffset)
 {
-	FVector TargetLocation = Target->GetActorLocation();
-
-	AInfomorphUE4Character* InfomorphCharacter = Cast<AInfomorphUE4Character>(InfomorphAIController->GetPawn());
-	if(InfomorphCharacter == nullptr)
+	AInfomorphUE4Character* AICharacter = Cast<AInfomorphUE4Character>(InfomorphAIController->GetPawn());
+	if(AICharacter == nullptr || AICharacter->IsConfused() || Target == nullptr)
 	{
 		return EBTNodeResult::Failed;
 	}
-	
-	FVector InitLocation = InfomorphCharacter->GetInitialLocation();
-	FVector SelfLocation = InfomorphCharacter->GetActorLocation();
 
-	if(FVector::Dist(SelfLocation, TargetLocation) < AcceptableRadius)
+	FVector AICharacterLocation = AICharacter->GetActorLocation();
+	FVector TargetLocation = Target->GetActorLocation();
+	float Distance = FVector::Dist(AICharacterLocation, TargetLocation);
+	if(Distance <= AcceptableRadius)
 	{
 		return EBTNodeResult::Succeeded;
 	}
 
-	EPathFollowingRequestResult::Type Result = InfomorphAIController->MoveToLocation(TargetLocation, AcceptableRadius * 0.8f);
+	FVector Direction = TargetLocation - AICharacterLocation;
+	Direction.Z = 0.0f;
+	Direction.Normalize();
 
-	return Result == EPathFollowingRequestResult::AlreadyAtGoal ? EBTNodeResult::Succeeded : EBTNodeResult::InProgress;
+	AICharacter->AddMovementInput(Direction);
+
+	return EBTNodeResult::InProgress;
 }

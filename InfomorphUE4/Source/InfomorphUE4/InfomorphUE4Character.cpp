@@ -46,6 +46,8 @@ FCharacterStats::FCharacterStats()
 	SpecialAttackDamage = 40.0f;
 
 	SpecialAttackCooldown = 10.0f;
+
+	bCanEverDodge = true;
 }
 
 void FCharacterStats::Initialize()
@@ -205,6 +207,7 @@ void AInfomorphUE4Character::ConfusionEnd()
 	AInfomorphBaseAIController* InfomorphAIController = Cast<AInfomorphBaseAIController>(GetController());
 	if(InfomorphAIController != nullptr)
 	{
+		LogOnScreen("Resume BT");
 		InfomorphAIController->ResumeBehaviorTree();
 	}
 }
@@ -398,6 +401,9 @@ void AInfomorphUE4Character::PossessedBy(AController* NewController)
 		return;
 	}
 
+	ResetState();
+	GetCharacterMovement()->MaxWalkSpeed = 375.0f;
+
 	AInfomorphPlayerController* InfomorphPC = Cast<AInfomorphPlayerController>(NewController);
 	if(InfomorphPC != nullptr)
 	{
@@ -415,7 +421,6 @@ void AInfomorphUE4Character::PossessedBy(AController* NewController)
 			Confuse(CharacterStats.ConfusionUnpossessedTime);
 			InteractionSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 			InteractionSphere->bGenerateOverlapEvents = false;
-			ResetState();
 			Light->SetVisibility(false);
 		}
 	}
@@ -518,7 +523,7 @@ void AInfomorphUE4Character::EndBlock()
 
 void AInfomorphUE4Character::Dodge(const FVector& DodgeDirection)
 {
-	if(CharacterStats.CurrentEnergy - CharacterStats.DodgeEnergyCost < 0.0f)
+	if(!CharacterStats.bCanEverDodge || CharacterStats.CurrentEnergy - CharacterStats.DodgeEnergyCost < 0.0f)
 	{
 		return;
 	}

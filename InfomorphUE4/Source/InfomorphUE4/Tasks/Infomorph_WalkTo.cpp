@@ -106,7 +106,24 @@ uint16 UInfomorph_WalkTo::GetInstanceMemorySize() const
 
 EBTNodeResult::Type UInfomorph_WalkTo::PerformMove(AInfomorphBaseAIController* InfomorphAIController, const FVector& TargetLocation)
 {
-	EPathFollowingRequestResult::Type Result = InfomorphAIController->MoveToLocation(TargetLocation, AcceptableRadius);
+	AInfomorphUE4Character* AICharacter = Cast<AInfomorphUE4Character>(InfomorphAIController->GetPawn());
+	if(AICharacter == nullptr || AICharacter->IsConfused())
+	{
+		return EBTNodeResult::Failed;
+	}
+	
+	FVector AICharacterLocation = AICharacter->GetActorLocation();
+	float Distance = FVector::Dist(AICharacterLocation, TargetLocation);
+	if(Distance <= AcceptableRadius)
+	{
+		return EBTNodeResult::Succeeded;
+	}
 
-	return Result == EPathFollowingRequestResult::AlreadyAtGoal ? EBTNodeResult::Succeeded : EBTNodeResult::InProgress;
+	FVector Direction = TargetLocation - AICharacterLocation;
+	Direction.Z = 0.0f;
+	Direction.Normalize();
+
+	AICharacter->AddMovementInput(Direction);
+
+	return EBTNodeResult::InProgress;
 }

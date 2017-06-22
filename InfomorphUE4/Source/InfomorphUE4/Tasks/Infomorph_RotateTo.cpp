@@ -63,7 +63,7 @@ void UInfomorph_RotateTo::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* Nod
 
 EBTNodeResult::Type UInfomorph_RotateTo::PerformRotate(AInfomorphUE4Character* ControlledActor, AInfomorphUE4Character* TargetActor, float DeltaSeconds)
 {
-	if(ControlledActor == nullptr || TargetActor == nullptr)
+	if(ControlledActor == nullptr || TargetActor == nullptr || TargetActor->IsConfused())
 	{
 		return EBTNodeResult::Failed;
 	}

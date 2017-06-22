@@ -124,6 +124,7 @@ void UInfomorphSkillPossession::StartUsing(AInfomorphPlayerController* Infomorph
 				TargetController = Cast<AInfomorphBaseAIController>(CharacterToPossess->GetController());
 				if(TargetController != nullptr)
 				{
+					LogOnScreen("Pause BT");
 					TargetController->PauseBehaviorTree("Possession");
 				}
 
@@ -152,8 +153,4 @@ void UInfomorphSkillPossession::StopUsing()
 	InfomorphPC->GetWorldTimerManager().ClearTimer(PossessingTimerHandle);
 	InfomorphPC->GetWorldTimerManager().ClearTimer(CheckIfPossessableTimerHandle);
 	InfomorphPC->SetViewTargetWithBlend(InfomorphPC->GetPawn(), PossessionTime, EViewTargetBlendFunction::VTBlend_Cubic);
-	if(TargetController != nullptr)
-	{
-		TargetController->ResumeBehaviorTree();
-	}
 }

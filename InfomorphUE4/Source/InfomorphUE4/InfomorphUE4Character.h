@@ -7,6 +7,7 @@
 #include "InfomorphWeapon.h"
 #include "InfomorphShield.h"
 #include "InfomorphBaseAIController.h"
+#include "InfomorphUE4.h"
 #include "InfomorphUE4Character.generated.h"
 
 USTRUCT()
@@ -55,6 +56,8 @@ public:
 		float SpecialAttackDamage;
 	UPROPERTY(EditAnywhere, Category = Cooldowns)
 		float SpecialAttackCooldown;
+	UPROPERTY(EditAnywhere, Category = Abilities)
+		bool bCanEverDodge;
 
 	float CurrentConsciousness;
 	float CurrentEnergy;
@@ -239,6 +242,7 @@ public:
 		AInfomorphBaseAIController* InfomorphAIController = Cast<AInfomorphBaseAIController>(GetController());
 		if(InfomorphAIController)
 		{
+			LogOnScreen("Resume BT 2");
 			InfomorphAIController->ResumeBehaviorTree();
 		}
 	}
@@ -265,6 +269,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = Stats)
 		void ResetState()
 	{
+		ExitStealthMode();
 		bIsLightAttack =
 			bIsHeavyAttack =
 			bIsSpecialAttack =
