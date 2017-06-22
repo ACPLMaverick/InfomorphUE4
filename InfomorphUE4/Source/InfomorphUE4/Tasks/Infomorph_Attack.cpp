@@ -2,6 +2,7 @@
 
 #include "Infomorph_Attack.h"
 #include "InfomorphBaseAIController.h"
+#include "InfomorphUE4Character.h"
 
 UInfomorph_Attack::UInfomorph_Attack(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -32,6 +33,12 @@ void UInfomorph_Attack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeM
 	if(!InfomorphAIController->IsAttacking())
 	{
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+	}
+
+	AInfomorphUE4Character* AICharacter = Cast<AInfomorphUE4Character>(InfomorphAIController->GetPawn());
+	if(AICharacter == nullptr || AICharacter->IsConfused())
+	{
+		FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
 	}
 }
 

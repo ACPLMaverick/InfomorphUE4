@@ -72,6 +72,13 @@ void UInfomorph_Block::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMe
 	}
 	AActor* Target = Cast<AActor>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(TargetKey.SelectedKeyName));
 	AInfomorphUE4Character* Character = Cast<AInfomorphUE4Character>(InfomorphAIController->GetPawn());
+
+	if(Character == nullptr || Character->IsConfused())
+	{
+		FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
+		return;
+	}
+
 	if(Character != nullptr && Target != nullptr)
 	{
 		if(FVector::Dist(Character->GetActorLocation(), Target->GetActorLocation()) > TargetDistanceFromTarget)

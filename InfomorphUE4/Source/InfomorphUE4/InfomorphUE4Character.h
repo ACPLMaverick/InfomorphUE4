@@ -7,6 +7,7 @@
 #include "InfomorphWeapon.h"
 #include "InfomorphShield.h"
 #include "InfomorphBaseAIController.h"
+#include "InfomorphUE4.h"
 #include "InfomorphUE4Character.generated.h"
 
 USTRUCT()
@@ -239,6 +240,7 @@ public:
 		AInfomorphBaseAIController* InfomorphAIController = Cast<AInfomorphBaseAIController>(GetController());
 		if(InfomorphAIController)
 		{
+			LogOnScreen("Resume BT 2");
 			InfomorphAIController->ResumeBehaviorTree();
 		}
 	}
@@ -265,6 +267,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = Stats)
 		void ResetState()
 	{
+		ExitStealthMode();
 		bIsLightAttack =
 			bIsHeavyAttack =
 			bIsSpecialAttack =

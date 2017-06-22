@@ -205,6 +205,7 @@ void AInfomorphUE4Character::ConfusionEnd()
 	AInfomorphBaseAIController* InfomorphAIController = Cast<AInfomorphBaseAIController>(GetController());
 	if(InfomorphAIController != nullptr)
 	{
+		LogOnScreen("Resume BT");
 		InfomorphAIController->ResumeBehaviorTree();
 	}
 }
@@ -398,6 +399,9 @@ void AInfomorphUE4Character::PossessedBy(AController* NewController)
 		return;
 	}
 
+	ResetState();
+	GetCharacterMovement()->MaxWalkSpeed = 375.0f;
+
 	AInfomorphPlayerController* InfomorphPC = Cast<AInfomorphPlayerController>(NewController);
 	if(InfomorphPC != nullptr)
 	{
@@ -415,7 +419,6 @@ void AInfomorphUE4Character::PossessedBy(AController* NewController)
 			Confuse(CharacterStats.ConfusionUnpossessedTime);
 			InteractionSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 			InteractionSphere->bGenerateOverlapEvents = false;
-			ResetState();
 			Light->SetVisibility(false);
 		}
 	}
