@@ -395,6 +395,11 @@ void AInfomorphPlayerController::InteractWithCurrentInteractable()
 
 void AInfomorphPlayerController::SetTutorialWidget(UInfomorphTutorialWidget* Widget)
 {
+	if (CurrentTutorialWidget != nullptr && Widget != nullptr)
+	{
+		CurrentTutorialWidget->CloseTutorial();
+	}
+
 	CurrentTutorialWidget = Widget;
 	if(CurrentTutorialWidget != nullptr)
 	{
