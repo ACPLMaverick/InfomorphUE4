@@ -7,7 +7,6 @@
 #include "InfomorphWeapon.h"
 #include "InfomorphShield.h"
 #include "InfomorphBaseAIController.h"
-#include "InfomorphUE4.h"
 #include "InfomorphUE4Character.generated.h"
 
 USTRUCT()
@@ -148,7 +147,6 @@ protected:
 	void ProcessInteractionTarget(float DeltaSeconds);
 	void ProcessPossessionMaterial(float DeltaSeconds);
 
-	void ConfusionEnd();
 
 	void DestroyActor();
 
@@ -179,6 +177,7 @@ public:
 
 	float GetPossessionChance(const FVector& PlayerLocation);
 	void Confuse(float ConfusionTime, float Multiplier = 1.0f);
+	void ConfusionEnd();
 	void SetInteractionTarget(USceneComponent* NewInteractionTarget);
 	float CalculateTargetYaw(const FRotator& CurrentRotation, const FRotator& TargetRotation, float LerpT) const;
 
@@ -242,7 +241,6 @@ public:
 		AInfomorphBaseAIController* InfomorphAIController = Cast<AInfomorphBaseAIController>(GetController());
 		if(InfomorphAIController)
 		{
-			LogOnScreen("Resume BT 2");
 			InfomorphAIController->ResumeBehaviorTree();
 		}
 	}

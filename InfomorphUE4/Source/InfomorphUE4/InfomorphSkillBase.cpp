@@ -78,6 +78,7 @@ void UInfomorphSkillPossession::OnCheckIfPossessableTimerCompleted()
 		{
 			CurrentlyPossessedCharacter->EventPossessionFailed(CharacterToPossess);
 			CurrentlyPossessedCharacter->Confuse(CurrentlyPossessedCharacter->GetCharacterStats().ConfusionPossessedTime, 0.5f);
+			CharacterToPossess->ConfusionEnd();
 			StopUsing();
 		}
 	}
@@ -124,7 +125,6 @@ void UInfomorphSkillPossession::StartUsing(AInfomorphPlayerController* Infomorph
 				TargetController = Cast<AInfomorphBaseAIController>(CharacterToPossess->GetController());
 				if(TargetController != nullptr)
 				{
-					LogOnScreen("Pause BT");
 					TargetController->PauseBehaviorTree("Possession");
 				}
 
