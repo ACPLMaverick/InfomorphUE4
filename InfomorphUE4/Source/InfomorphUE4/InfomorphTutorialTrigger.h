@@ -22,6 +22,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = Tutorial)
 		bool bDestroyAfterShow;
 
+	UPROPERTY(EditAnywhere, Category = Tutorial)
+		FText TutorialText;
+
 	UInfomorphTutorialWidget* TutorialWidget;
 
 public:	

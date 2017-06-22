@@ -42,6 +42,7 @@ void AInfomorphTutorialTrigger::OnTutorialLauncherBeginOverlap(UPrimitiveCompone
 	}
 
 	TutorialWidget = CreateWidget<UInfomorphTutorialWidget>(PlayerController, TutorialWidgetClass.Get());
+	TutorialWidget->SetText(TutorialText);
 	TutorialWidget->Show(PlayerController);
 
 	if(bDestroyAfterShow)

@@ -7,7 +7,7 @@
 
 void UInfomorphTutorialWidget::CloseTutorial()
 {
-	RemoveFromViewport();
+	WidgetDisappear();
 	PlayerController->SetTutorialWidget(nullptr);
 	PlayerController = nullptr;
 }
@@ -23,4 +23,11 @@ void UInfomorphTutorialWidget::Show(AInfomorphPlayerController* OwningPlayerCont
 	PlayerController->SetTutorialWidget(this);
 
 	AddToViewport(999);
+
+	WidgetAppear();
+}
+
+void UInfomorphTutorialWidget::WidgetDisappear_Implementation()
+{
+	RemoveFromViewport();
 }

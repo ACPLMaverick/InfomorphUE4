@@ -20,4 +20,13 @@ protected:
 public:
 	void CloseTutorial();
 	void Show(class AInfomorphPlayerController* OwningPlayerController);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = TutorialWidget)
+		void WidgetAppear();
+
+	UFUNCTION(BlueprintNativeEvent, Category = TutorialWidget)
+		void WidgetDisappear();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = TutorialWidget)
+		void SetText(const FText& text);
 };
