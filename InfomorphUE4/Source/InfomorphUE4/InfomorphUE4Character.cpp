@@ -566,6 +566,7 @@ void AInfomorphUE4Character::Attack()
 {
 	if(CharacterStats.CurrentEnergy - CharacterStats.LightAttackEnergyCost < 0.0f)
 	{
+		EventNotEnoughEnergy();
 		return;
 	}
 
@@ -588,6 +589,7 @@ void AInfomorphUE4Character::HeavyAttack()
 {
 	if(CharacterStats.CurrentEnergy - CharacterStats.HeavyAttackEnergyCost < 0.0f)
 	{
+		EventNotEnoughEnergy();
 		return;
 	}
 
@@ -610,10 +612,12 @@ void AInfomorphUE4Character::SpecialAttack()
 {
 	if(CharacterStats.CurrentEnergy - CharacterStats.SpecialAttackEnergyCost < 0.0f)
 	{
+		EventNotEnoughEnergy();
 		return;
 	}
 	if(GetWorld()->GetRealTimeSeconds() - LastSpecialAttackTime <= CharacterStats.SpecialAttackCooldown)
 	{
+		EventCooldownNotFinishedSpecial();
 		return;
 	}
 
