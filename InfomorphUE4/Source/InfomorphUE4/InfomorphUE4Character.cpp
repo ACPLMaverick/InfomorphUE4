@@ -201,17 +201,6 @@ void AInfomorphUE4Character::ProcessPossessionMaterial(float DeltaSeconds)
 	}
 }
 
-void AInfomorphUE4Character::ConfusionEnd()
-{
-	CharacterStats.bIsConfused = false;
-	AInfomorphBaseAIController* InfomorphAIController = Cast<AInfomorphBaseAIController>(GetController());
-	if(InfomorphAIController != nullptr)
-	{
-		LogOnScreen("Resume BT");
-		InfomorphAIController->ResumeBehaviorTree();
-	}
-}
-
 void AInfomorphUE4Character::DestroyActor()
 {
 	Destroy();
@@ -733,6 +722,16 @@ void AInfomorphUE4Character::Confuse(float ConfusionTime, float Multiplier)
 {
 	CharacterStats.bIsConfused = true;
 	GetWorldTimerManager().SetTimer(ConfusionTimerHandle, this, &AInfomorphUE4Character::ConfusionEnd, ConfusionTime * Multiplier);
+}
+
+void AInfomorphUE4Character::ConfusionEnd()
+{
+	CharacterStats.bIsConfused = false;
+	AInfomorphBaseAIController* InfomorphAIController = Cast<AInfomorphBaseAIController>(GetController());
+	if(InfomorphAIController != nullptr)
+	{
+		InfomorphAIController->ResumeBehaviorTree();
+	}
 }
 
 void AInfomorphUE4Character::SetInteractionTarget(USceneComponent* NewInteractionTarget)
