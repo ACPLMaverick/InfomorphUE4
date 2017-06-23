@@ -706,7 +706,7 @@ float AInfomorphUE4Character::GetPossessionChance(const FVector& PlayerLocation)
 	}
 
 	float ConsciousnessPercentage = CharacterStats.CurrentConsciousness / CharacterStats.BaseConsciousness;
-	if(ConsciousnessPercentage <= 0.25f)
+	if(ConsciousnessPercentage <= CharacterStats.ConsciousnessPercentPossessable)
 	{
 		return 1.0f;
 	}

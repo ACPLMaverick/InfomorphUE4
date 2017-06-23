@@ -9,53 +9,55 @@
 #include "InfomorphBaseAIController.h"
 #include "InfomorphUE4Character.generated.h"
 
-USTRUCT()
+USTRUCT(Blueprintable, BlueprintType)
 struct FCharacterStats
 {
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditAnywhere, Category = Stats)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stats)
 		float BaseConsciousness;
-	UPROPERTY(EditAnywhere, Category = Stats)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stats)
 		float BaseEnergy;
-	UPROPERTY(EditAnywhere, Category = Stats)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stats)
 		float EnergyRecoveryPerSecond;
-	UPROPERTY(EditAnywhere, Category = Stats)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stats)
 		float EnergyRestoreCooldown;
-	UPROPERTY(EditAnywhere, Category = Stats)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stats)
 		float ConsciousnessArmorWhenPossessed;
-	UPROPERTY(EditAnywhere, Category = Stats)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stats)
+		float ConsciousnessPercentPossessable;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stats)
 		float DodgeSpeed;
-	UPROPERTY(EditAnywhere, Category = Confusion)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Confusion)
 		float ConfusionPossessedTime;
-	UPROPERTY(EditAnywhere, Category = Confusion)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Confusion)
 		float ConfusionUnpossessedTime;
-	UPROPERTY(EditAnywhere, Category = Senses)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Senses)
 		float SightRange;
-	UPROPERTY(EditAnywhere, Category = Senses)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Senses)
 		float HearRange;
-	UPROPERTY(EditAnywhere, Category = Senses)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Senses)
 		float LooseTargetTimeout;
-	UPROPERTY(EditAnywhere, Category = Costs)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Costs)
 		float LightAttackEnergyCost;
-	UPROPERTY(EditAnywhere, Category = Costs)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Costs)
 		float HeavyAttackEnergyCost;
-	UPROPERTY(EditAnywhere, Category = Costs)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Costs)
 		float SpecialAttackEnergyCost;
-	UPROPERTY(EditAnywhere, Category = Costs)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Costs)
 		float DodgeEnergyCost;
-	UPROPERTY(EditAnywhere, Category = Costs)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Costs)
 		float BlockEnergyCost;
-	UPROPERTY(EditAnywhere, Category = Damage)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Damage)
 		float LightAttackDamage;
-	UPROPERTY(EditAnywhere, Category = Damage)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Damage)
 		float HeavyAttackDamage;
-	UPROPERTY(EditAnywhere, Category = Damage)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Damage)
 		float SpecialAttackDamage;
-	UPROPERTY(EditAnywhere, Category = Cooldowns)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Cooldowns)
 		float SpecialAttackCooldown;
-	UPROPERTY(EditAnywhere, Category = Abilities)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Abilities)
 		bool bCanEverDodge;
 
 	float CurrentConsciousness;
@@ -344,6 +346,33 @@ public:
 	{
 		return MaterialInstance;
 	}
+
+
+	UFUNCTION(BlueprintCallable, Category = Stats)
+		void SetCurrentConsciousness(float value)
+	{
+		CharacterStats.CurrentConsciousness = value;
+	}
+
+	UFUNCTION(BlueprintCallable, Category = Stats)
+		void SetCurrentEnergy(float value)
+	{
+		CharacterStats.CurrentEnergy = value;
+	}
+
+
+	UFUNCTION(BlueprintCallable, Category = Stats)
+		void AddCurrentConsciousness(float value)
+	{
+		CharacterStats.CurrentConsciousness += value;
+	}
+
+	UFUNCTION(BlueprintCallable, Category = Stats)
+		void AddCurrentEnergy(float value)
+	{
+		CharacterStats.CurrentEnergy += value;
+	}
+
 
 	UFUNCTION(BlueprintCallable, Category = Utility)
 		FORCEINLINE AActor* GetCameraTarget() const { return CameraTarget; }
