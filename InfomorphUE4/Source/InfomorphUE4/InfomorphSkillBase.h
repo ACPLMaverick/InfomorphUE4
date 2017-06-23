@@ -55,17 +55,17 @@ public:
 	}
 };
 
-USTRUCT()
+USTRUCT(Blueprintable, BlueprintType)
 struct INFOMORPHUE4_API FSkillInfo
 {
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (DisplayName = "Skill Name"))
 		FName SkillName;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (DisplayName = "Skill Class"))
 		TSubclassOf<UInfomorphSkillBase> SkillClass;
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Meta = (DisplayName = "Skill Reference"))
 		UInfomorphSkillBase* Skill;
 
 	void Initialize();
