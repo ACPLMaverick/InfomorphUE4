@@ -257,6 +257,9 @@ AInfomorphUE4Character::AInfomorphUE4Character()
 	GetCharacterMovement()->MaxWalkSpeedCrouched = 100.0f;
 	GetCharacterMovement()->GetNavAgentPropertiesRef().bCanCrouch = true;
 
+	if(GetMesh() != nullptr)
+		GetMesh()->bGenerateOverlapEvents = true;
+
 	// Create a camera boom (pulls in towards the player if there is a collision)
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
@@ -566,6 +569,7 @@ void AInfomorphUE4Character::Attack()
 {
 	if(CharacterStats.CurrentEnergy - CharacterStats.LightAttackEnergyCost < 0.0f)
 	{
+		EventNotEnoughEnergy();
 		return;
 	}
 
@@ -588,6 +592,7 @@ void AInfomorphUE4Character::HeavyAttack()
 {
 	if(CharacterStats.CurrentEnergy - CharacterStats.HeavyAttackEnergyCost < 0.0f)
 	{
+		EventNotEnoughEnergy();
 		return;
 	}
 
@@ -610,10 +615,12 @@ void AInfomorphUE4Character::SpecialAttack()
 {
 	if(CharacterStats.CurrentEnergy - CharacterStats.SpecialAttackEnergyCost < 0.0f)
 	{
+		EventNotEnoughEnergy();
 		return;
 	}
 	if(GetWorld()->GetRealTimeSeconds() - LastSpecialAttackTime <= CharacterStats.SpecialAttackCooldown)
 	{
+		EventCooldownNotFinishedSpecial();
 		return;
 	}
 

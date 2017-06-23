@@ -277,11 +277,20 @@ public:
 			bIsBlocking = false;
 	}
 
-	UFUNCTION(BlueprintImplementableEvent, Category = Possession)
-		void EventPossessionFailed(AInfomorphUE4Character* CharacterWantedToPossess);
+	UFUNCTION(BlueprintImplementableEvent, Category = Stats)
+		void EventNotEnoughEnergy();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = Stats)
+		void EventCooldownNotFinishedSkill();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = Stats)
+		void EventCooldownNotFinishedSpecial();
 
 	UFUNCTION(BlueprintCallable, Category = Stats)
 		FORCEINLINE FVector GetInitialLocation() const { return InitialLocation; }
+
+	UFUNCTION(BlueprintImplementableEvent, Category = Possession)
+		void EventPossessionFailed(AInfomorphUE4Character* CharacterWantedToPossess);
 
 	UFUNCTION(BlueprintCallable, Category = Camera)
 		FVector GetEyesLocation() const;

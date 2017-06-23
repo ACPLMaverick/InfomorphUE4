@@ -109,6 +109,9 @@ void UInfomorphSkillPossession::StartUsing(AInfomorphPlayerController* Infomorph
 
 	if(!CanBeUsed())
 	{
+		AInfomorphUE4Character* CurrentlyPossessedCharacter = Cast<AInfomorphUE4Character>(InfomorphPC->GetPawn());
+		if (CurrentlyPossessedCharacter != nullptr)
+			CurrentlyPossessedCharacter->EventCooldownNotFinishedSkill();
 		return;
 	}
 

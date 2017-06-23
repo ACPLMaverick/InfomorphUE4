@@ -17,7 +17,7 @@ AInfomorphShield::AInfomorphShield()
 
 	ShieldMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ShieldMesh"));
 	ShieldMesh->SetupAttachment(RootComponent);
-	ShieldMesh->bGenerateOverlapEvents = false;
+	ShieldMesh->bGenerateOverlapEvents = true;
 	ShieldMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Overlap);
 	ShieldMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 
