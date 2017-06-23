@@ -347,6 +347,23 @@ public:
 		return MaterialInstance;
 	}
 
+	UFUNCTION(BlueprintCallable, Category = Stats)
+		FORCEINLINE float GetCurrentConsciousnessPercent() const
+	{
+		return CharacterStats.CurrentConsciousness / CharacterStats.BaseConsciousness;
+	}
+	UFUNCTION(BlueprintCallable, Category = Stats)
+		FORCEINLINE float GetCurrentEnergyPercent() const
+	{
+		return CharacterStats.CurrentEnergy / CharacterStats.BaseEnergy;
+	}
+
+	UFUNCTION(BlueprintCallable, Category = Stats)
+		FORCEINLINE bool GetIsPossessable() const
+	{
+		return (GetCurrentConsciousnessPercent()) <= CharacterStats.ConsciousnessPercentPossessable;
+	}
+
 
 	UFUNCTION(BlueprintCallable, Category = Stats)
 		void SetCurrentConsciousness(float value)
