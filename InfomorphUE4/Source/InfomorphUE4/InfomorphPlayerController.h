@@ -35,7 +35,8 @@ protected:
 	float LastMovedTimer;
 
 	float MovementMultiplier;
-	float LookMultiplier;
+
+	bool bRecentlyTriedToSwapCameraTarget;
 
 	int32 CurrentSelectedSkillIndex;
 
@@ -66,9 +67,10 @@ protected:
 	void PerformSkillSelectDown();
 
 	AActor* GetActorInLookDirection(const FVector& EyesLocation, const FVector &Direction, float MaxDistance) const;
+	AActor* GetNextActorInDirection(float MaxDistance, AActor* CurrentActor, const FVector& InputDirection);
 
 	void LookForInteractables(float DeltaSeconds);
-	void TryLockCamera(bool bOnlyIfCameraLocked = false);
+	void TryLockCamera(AActor* CurrentTarget, const FVector& InputDirection = FVector::ZeroVector);
 
 public:
 	AInfomorphPlayerController();
@@ -92,34 +94,9 @@ public:
 	FORCEINLINE float GetLastMovedTimer() const { return LastMovedTimer; }
 	FORCEINLINE float GetLookTimerTreshold() const { return LookTimerThreshold; }
 
-	FORCEINLINE void SetMovementMultiplier(float Multiplier)
+	FORCEINLINE void SetMovementMultiplier(float NewMultiplier)
 	{
-		MovementMultiplier = FMath::Clamp(Multiplier, 0.0f, 2.0f);
-	}
-
-	FORCEINLINE void ResetMovementMultiplier()
-	{
-		MovementMultiplier = 1.0f;
-	}
-
-	FORCEINLINE float GetMovementMultiplier() const
-	{
-		return MovementMultiplier;
-	}
-
-	FORCEINLINE void SetLookMultiplier(float Multiplier)
-	{
-		LookMultiplier = FMath::Clamp(Multiplier, 0.0f, 2.0f);
-	}
-
-	FORCEINLINE void ResetLookMultiplier()
-	{
-		LookMultiplier = 1.0f;
-	}
-
-	FORCEINLINE float GetLookMultiplier() const
-	{
-		return LookMultiplier;
+		MovementMultiplier = NewMultiplier;
 	}
 
 	FORCEINLINE void PlayFeedback(UForceFeedbackEffect* FeedbackEffect)

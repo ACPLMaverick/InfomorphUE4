@@ -7,9 +7,12 @@
 
 void UInfomorphTutorialWidget::CloseTutorial()
 {
-	WidgetDisappear();
-	PlayerController->SetTutorialWidget(nullptr);
-	PlayerController = nullptr;
+	if (PlayerController != nullptr)
+	{
+		WidgetDisappear();
+		PlayerController->SetTutorialWidget(nullptr);
+		PlayerController = nullptr;
+	}
 }
 
 void UInfomorphTutorialWidget::Show(AInfomorphPlayerController* OwningPlayerController)

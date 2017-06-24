@@ -9,54 +9,66 @@
 #include "InfomorphBaseAIController.h"
 #include "InfomorphUE4Character.generated.h"
 
-USTRUCT()
+UENUM(BlueprintType)
+enum class EMovementState : uint8
+{
+	Normal UMETA(DisplayName = "Normal"),
+	Patrol UMETA(DisplayName = "Patrol"),
+	TargetLocked UMETA(DisplayName = "Target Locked")
+};
+
+USTRUCT(Blueprintable, BlueprintType)
 struct FCharacterStats
 {
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditAnywhere, Category = Stats)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stats)
 		float BaseConsciousness;
-	UPROPERTY(EditAnywhere, Category = Stats)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stats)
 		float BaseEnergy;
-	UPROPERTY(EditAnywhere, Category = Stats)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stats)
 		float EnergyRecoveryPerSecond;
-	UPROPERTY(EditAnywhere, Category = Stats)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stats)
 		float EnergyRestoreCooldown;
-	UPROPERTY(EditAnywhere, Category = Stats)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stats)
 		float ConsciousnessArmorWhenPossessed;
-	UPROPERTY(EditAnywhere, Category = Stats)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stats)
+		float ConsciousnessPercentPossessable;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stats)
 		float DodgeSpeed;
-	UPROPERTY(EditAnywhere, Category = Confusion)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Confusion)
 		float ConfusionPossessedTime;
-	UPROPERTY(EditAnywhere, Category = Confusion)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Confusion)
 		float ConfusionUnpossessedTime;
-	UPROPERTY(EditAnywhere, Category = Senses)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Senses)
 		float SightRange;
-	UPROPERTY(EditAnywhere, Category = Senses)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Senses)
 		float HearRange;
-	UPROPERTY(EditAnywhere, Category = Senses)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Senses)
 		float LooseTargetTimeout;
-	UPROPERTY(EditAnywhere, Category = Costs)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Costs)
 		float LightAttackEnergyCost;
-	UPROPERTY(EditAnywhere, Category = Costs)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Costs)
 		float HeavyAttackEnergyCost;
-	UPROPERTY(EditAnywhere, Category = Costs)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Costs)
 		float SpecialAttackEnergyCost;
-	UPROPERTY(EditAnywhere, Category = Costs)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Costs)
 		float DodgeEnergyCost;
-	UPROPERTY(EditAnywhere, Category = Costs)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Costs)
 		float BlockEnergyCost;
-	UPROPERTY(EditAnywhere, Category = Damage)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Damage)
 		float LightAttackDamage;
-	UPROPERTY(EditAnywhere, Category = Damage)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Damage)
 		float HeavyAttackDamage;
-	UPROPERTY(EditAnywhere, Category = Damage)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Damage)
 		float SpecialAttackDamage;
-	UPROPERTY(EditAnywhere, Category = Cooldowns)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Cooldowns)
 		float SpecialAttackCooldown;
-	UPROPERTY(EditAnywhere, Category = Abilities)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Abilities)
 		bool bCanEverDodge;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Movement)
+		float MaxSpeed;
 
 	float CurrentConsciousness;
 	float CurrentEnergy;
@@ -138,6 +150,9 @@ protected:
 	bool bWasHit;
 	bool bIsBlocking;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement)
+		EMovementState MovementState;
+
 public:
 	UPROPERTY(EditAnywhere, Category = AI)
 		class UBehaviorTree* BehaviorTree;
@@ -175,7 +190,9 @@ public:
 
 	virtual void Dedigitalize();
 
-	float GetPossessionChance(const FVector& PlayerLocation);
+	UFUNCTION(BlueprintCallable, Category = Possession)
+		float GetPossessionChance(const FVector& PlayerLocation);
+
 	void Confuse(float ConfusionTime, float Multiplier = 1.0f);
 	void ConfusionEnd();
 	void SetInteractionTarget(USceneComponent* NewInteractionTarget);
@@ -218,6 +235,8 @@ public:
 		FORCEINLINE bool IsBlocking() const { return bIsBlocking; }
 	UFUNCTION(BlueprintCallable, Category = Info)
 		FORCEINLINE bool IsDead() const { return CharacterStats.CurrentConsciousness <= 0.0f; }
+	UFUNCTION(BlueprintCallable, Category = Movement)
+		FORCEINLINE EMovementState GetMovementState() const { return MovementState; }
 
 	FORCEINLINE bool IsActionsDisabled() const
 	{
@@ -275,6 +294,12 @@ public:
 			bIsDodgingZeroInput =
 			bWasHit =
 			bIsBlocking = false;
+	}
+
+	UFUNCTION(BlueprintCallable, Category = Movement)
+		void SetMovementState(EMovementState NewMovementState)
+	{
+		MovementState = NewMovementState;
 	}
 
 	UFUNCTION(BlueprintImplementableEvent, Category = Stats)
@@ -344,6 +369,50 @@ public:
 	{
 		return MaterialInstance;
 	}
+
+	UFUNCTION(BlueprintCallable, Category = Stats)
+		FORCEINLINE float GetCurrentConsciousnessPercent() const
+	{
+		return CharacterStats.CurrentConsciousness / CharacterStats.BaseConsciousness;
+	}
+	UFUNCTION(BlueprintCallable, Category = Stats)
+		FORCEINLINE float GetCurrentEnergyPercent() const
+	{
+		return CharacterStats.CurrentEnergy / CharacterStats.BaseEnergy;
+	}
+
+	UFUNCTION(BlueprintCallable, Category = Stats)
+		FORCEINLINE bool GetIsPossessable(const FVector& PlayerLocation)
+	{
+		return (GetPossessionChance(PlayerLocation) > 0.0f);
+	}
+
+
+	UFUNCTION(BlueprintCallable, Category = Stats)
+		void SetCurrentConsciousness(float value)
+	{
+		CharacterStats.CurrentConsciousness = value;
+	}
+
+	UFUNCTION(BlueprintCallable, Category = Stats)
+		void SetCurrentEnergy(float value)
+	{
+		CharacterStats.CurrentEnergy = value;
+	}
+
+
+	UFUNCTION(BlueprintCallable, Category = Stats)
+		void AddCurrentConsciousness(float value)
+	{
+		CharacterStats.CurrentConsciousness += value;
+	}
+
+	UFUNCTION(BlueprintCallable, Category = Stats)
+		void AddCurrentEnergy(float value)
+	{
+		CharacterStats.CurrentEnergy += value;
+	}
+
 
 	UFUNCTION(BlueprintCallable, Category = Utility)
 		FORCEINLINE AActor* GetCameraTarget() const { return CameraTarget; }

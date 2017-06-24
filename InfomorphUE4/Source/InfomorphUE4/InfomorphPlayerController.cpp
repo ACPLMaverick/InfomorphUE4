@@ -15,14 +15,14 @@
 void AInfomorphPlayerController::MoveForward(float Value)
 {
 	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
-	float MovementValue = Value * MovementMultiplier;
-	if(PossessedCharacter != nullptr && MovementValue != 0.0f && !PossessedCharacter->IsActionsDisabled())
+	if(PossessedCharacter != nullptr && Value != 0.0f && !PossessedCharacter->IsActionsDisabled())
 	{
+		Value = ((int)(Value * 2.0f)) * 0.5f;
 		const FRotator Rotation = GetControlRotation();
 		const FRotator YawRotation(0, Rotation.Yaw, 0);
 
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-		PossessedCharacter->AddMovementInput(Direction, MovementValue);
+		PossessedCharacter->AddMovementInput(Direction, Value);
 		LastMovedTimer = 0.0f;
 	}
 }
@@ -30,14 +30,14 @@ void AInfomorphPlayerController::MoveForward(float Value)
 void AInfomorphPlayerController::MoveRight(float Value)
 {
 	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
-	float MovementValue = Value * MovementMultiplier;
-	if(PossessedCharacter != nullptr && MovementValue != 0.0f && !PossessedCharacter->IsActionsDisabled())
+	if(PossessedCharacter != nullptr && Value != 0.0f && !PossessedCharacter->IsActionsDisabled())
 	{
+		Value = ((int)(Value * 2.0f)) * 0.5f;
 		const FRotator Rotation = GetControlRotation();
 		const FRotator YawRotation(0, Rotation.Yaw, 0);
 
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-		PossessedCharacter->AddMovementInput(Direction, MovementValue);
+		PossessedCharacter->AddMovementInput(Direction, Value);
 		LastMovedTimer = 0.0f;
 	}
 }
@@ -46,10 +46,14 @@ void AInfomorphPlayerController::Turn(float Value)
 {
 	if(Value != 0.0f)
 	{
-		LastLookedTimer = 0.0f;
-		AddYawInput(Value * LookMultiplier);
+		AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
+		if(PossessedCharacter != nullptr && PossessedCharacter->IsCameraLocked())
+		{
+			return;
+		}
 
-		TryLockCamera(true);
+		LastLookedTimer = 0.0f;
+		AddYawInput(Value);
 	}
 }
 
@@ -57,21 +61,29 @@ void AInfomorphPlayerController::TurnAtRate(float Rate)
 {
 	if(Rate != 0.0f)
 	{
-		LastLookedTimer = 0.0f;
-		AddYawInput(Rate * BaseTurnRate * GetWorld()->GetDeltaSeconds() * LookMultiplier);
+		AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
+		if(PossessedCharacter != nullptr && PossessedCharacter->IsCameraLocked())
+		{
+			return;
+		}
 
-		TryLockCamera(true);
+		LastLookedTimer = 0.0f;
+		AddYawInput(Rate * BaseTurnRate * GetWorld()->GetDeltaSeconds());
 	}
 }
 
 void AInfomorphPlayerController::LookUp(float Value)
-{
+{	
 	if(Value != 0.0f)
 	{
-		LastLookedTimer = 0.0f;
-		AddPitchInput(Value * LookMultiplier);
+		AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
+		if(PossessedCharacter != nullptr && PossessedCharacter->IsCameraLocked())
+		{
+			return;
+		}
 
-		TryLockCamera(true);
+		LastLookedTimer = 0.0f;
+		AddPitchInput(Value);
 	}
 }
 
@@ -79,10 +91,14 @@ void AInfomorphPlayerController::LookUpAtRate(float Rate)
 {
 	if(Rate != 0.0f)
 	{
-		LastLookedTimer = 0.0f;
-		AddPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds() * LookMultiplier);
+		AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
+		if(PossessedCharacter != nullptr && PossessedCharacter->IsCameraLocked())
+		{
+			return;
+		}
 
-		TryLockCamera(true);
+		LastLookedTimer = 0.0f;
+		AddPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
 	}
 }
 
@@ -291,7 +307,7 @@ void AInfomorphPlayerController::PerformCameraLock()
 		}
 		else
 		{
-			TryLockCamera();
+			TryLockCamera(nullptr);
 		}
 	}
 }
@@ -443,7 +459,13 @@ AActor* AInfomorphPlayerController::GetActorInLookDirection(const FVector& EyesL
 		const int32 HitsSize = Hits.Num();
 		for(int32 i = 0; i < HitsSize; ++i)
 		{
-			if(Hits[i].GetActor() == nullptr || !Hits[i].GetActor()->IsA(AInfomorphUE4Character::StaticClass()))
+			if(Hits[i].GetActor() == nullptr)
+			{
+				continue;
+			}
+
+			AInfomorphUE4Character* InfomorphCharacter = Cast<AInfomorphUE4Character>(Hits[i].GetActor());
+			if(InfomorphCharacter == nullptr || InfomorphCharacter->IsDead())
 			{
 				continue;
 			}
@@ -452,6 +474,7 @@ AActor* AInfomorphPlayerController::GetActorInLookDirection(const FVector& EyesL
 			ToHitLocation.Normalize();
 			float DotProduct = FVector::DotProduct(Direction, ToHitLocation);
 			float Angle = FMath::Acos(DotProduct);
+
 			if(Angle < MaxAngle)
 			{
 				float Distance = FVector::Distance(EyesLocation, Hits[i].GetActor()->GetActorLocation());
@@ -472,6 +495,62 @@ AActor* AInfomorphPlayerController::GetActorInLookDirection(const FVector& EyesL
 					MaxScore = Score;
 					HitActor = Hits[i].GetActor();
 				}
+			}
+		}
+	}
+
+	return HitActor;
+}
+
+AActor* AInfomorphPlayerController::GetNextActorInDirection(float MaxDistance, AActor* CurrentActor, const FVector& InputDirection)
+{
+	UWorld* World = GetWorld();
+	if(World == nullptr)
+	{
+		return nullptr;
+	}
+	APawn* ControlledPawn = GetPawn();
+	if(ControlledPawn == nullptr)
+	{
+		return nullptr;
+	}
+	if(CurrentActor == nullptr)
+	{
+		return nullptr;
+	}
+
+	static const FName TraceTag = TEXT("LockTrace");
+
+	FCollisionObjectQueryParams ObjectQueryParams;
+	ObjectQueryParams.AddObjectTypesToQuery(ECollisionChannel::ECC_Pawn);
+	FCollisionQueryParams TraceParams(TraceTag, true, GetPawn());
+	TraceParams.AddIgnoredActor(CurrentActor);
+	FCollisionShape CollisionShape;
+	CollisionShape.SetSphere(MaxDistance);
+
+	AActor* HitActor = nullptr;
+	TArray<FHitResult> Hits;
+	bool bWasHit = World->SweepMultiByObjectType(Hits, ControlledPawn->GetActorLocation(), ControlledPawn->GetActorLocation(), FQuat::Identity, ObjectQueryParams, CollisionShape, TraceParams);
+
+	if(bWasHit)
+	{
+		const int32 HitsCount = Hits.Num();
+		float MaxDot = 0.0f;
+		for(int32 i = 0; i < HitsCount; ++i)
+		{
+			AActor* Candidate = Hits[i].GetActor();
+			if(Candidate == nullptr)
+			{
+				continue;
+			}
+
+			FVector CurrentToCandidate = Candidate->GetActorLocation() - CurrentActor->GetActorLocation();
+			CurrentToCandidate.Normalize();
+			float DotCandidate = FVector::DotProduct(CurrentToCandidate, InputDirection);
+			if(DotCandidate >= MaxDot)
+			{
+				MaxDot = DotCandidate;
+				HitActor = Candidate;
 			}
 		}
 	}
@@ -516,23 +595,30 @@ void AInfomorphPlayerController::LookForInteractables(float DeltaSeconds)
 	}
 }
 
-void AInfomorphPlayerController::TryLockCamera(bool bOnlyIfCameraLocked)
+void AInfomorphPlayerController::TryLockCamera(AActor* CurrentTarget, const FVector& InputDirection)
 {
 	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
 	if(PossessedCharacter != nullptr && !PossessedCharacter->IsDead())
 	{
-		if(bOnlyIfCameraLocked && !PossessedCharacter->IsCameraLocked())
-		{
-			return;
-		}
-
 		FVector EyesLocation = PossessedCharacter->GetEyesLocation();
 		FVector Direction = PossessedCharacter->GetEyesDirection();
 		float MaxDistance = PossessedCharacter->GetSightRange();
-		AActor* PossibleTarget = GetActorInLookDirection(EyesLocation, Direction, MaxDistance);
-		if(PossibleTarget != nullptr)
+		if(CurrentTarget == nullptr)
 		{
-			PossessedCharacter->LockCameraOnTarget(PossibleTarget);
+			AActor* PossibleTarget = GetActorInLookDirection(EyesLocation, Direction, MaxDistance);
+			if(PossibleTarget != nullptr)
+			{
+				PossessedCharacter->LockCameraOnTarget(PossibleTarget);
+			}
+		}
+		else
+		{
+			AActor* PossibleTarget = GetNextActorInDirection(MaxDistance, CurrentTarget, InputDirection);
+			if(PossibleTarget != nullptr)
+			{
+				bRecentlyTriedToSwapCameraTarget = true;
+				PossessedCharacter->LockCameraOnTarget(PossibleTarget);
+			}
 		}
 	}
 }
@@ -543,9 +629,6 @@ AInfomorphPlayerController::AInfomorphPlayerController() : Super()
 	BaseLookUpRate = 45.0f;
 	LookTimerThreshold = 0.75f;
 
-	MovementMultiplier = 1.0f;
-	LookMultiplier = 1.0f;
-
 	AutoReceiveInput = EAutoReceiveInput::Player0;
 	PrimaryActorTick.bCanEverTick = true;
 }
@@ -555,9 +638,6 @@ AInfomorphPlayerController::AInfomorphPlayerController(const FObjectInitializer&
 	BaseTurnRate = 45.0f;
 	BaseLookUpRate = 45.0f;
 	LookTimerThreshold = 0.75f;
-
-	MovementMultiplier = 1.0f;
-	LookMultiplier = 1.0f;
 
 	AutoReceiveInput = EAutoReceiveInput::Player0;
 	PrimaryActorTick.bCanEverTick = true;
@@ -574,9 +654,6 @@ void AInfomorphPlayerController::BeginPlay()
 	{
 		Skills[i].Initialize();
 	}
-
-	MovementMultiplier = 1.0f;
-	LookMultiplier = 1.0f;
 }
 
 void AInfomorphPlayerController::SetupInputComponent()
@@ -634,6 +711,27 @@ void AInfomorphPlayerController::Tick(float DeltaSeconds)
 	if(PossessedCharacter != nullptr && !PossessedCharacter->IsDead())
 	{
 		LookForInteractables(DeltaSeconds);
+
+		if(InputComponent != nullptr && PossessedCharacter->IsCameraLocked())
+		{
+			FVector InputDirection(0.0f, InputComponent->GetAxisValue("Turn") + InputComponent->GetAxisValue("TurnRate"), InputComponent->GetAxisValue("LookUp") + InputComponent->GetAxisValue("LookUpRate"));
+			InputDirection = GetControlRotation().RotateVector(InputDirection);
+			if(bRecentlyTriedToSwapCameraTarget)
+			{
+				if(InputDirection.Size() < 0.3f)
+				{
+					bRecentlyTriedToSwapCameraTarget = false;
+				}
+			}
+			else
+			{
+				if(InputDirection.Size() > 0.5f)
+				{
+					InputDirection.Normalize();
+					TryLockCamera(PossessedCharacter->GetCameraTarget(), InputDirection);
+				}
+			}
+		}
 	}
 	else
 	{
