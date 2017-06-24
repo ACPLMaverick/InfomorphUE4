@@ -190,7 +190,9 @@ public:
 
 	virtual void Dedigitalize();
 
-	float GetPossessionChance(const FVector& PlayerLocation);
+	UFUNCTION(BlueprintCallable, Category = Possession)
+		float GetPossessionChance(const FVector& PlayerLocation);
+
 	void Confuse(float ConfusionTime, float Multiplier = 1.0f);
 	void ConfusionEnd();
 	void SetInteractionTarget(USceneComponent* NewInteractionTarget);
@@ -380,9 +382,9 @@ public:
 	}
 
 	UFUNCTION(BlueprintCallable, Category = Stats)
-		FORCEINLINE bool GetIsPossessable() const
+		FORCEINLINE bool GetIsPossessable(const FVector& PlayerLocation)
 	{
-		return (GetCurrentConsciousnessPercent()) <= CharacterStats.ConsciousnessPercentPossessable;
+		return (GetPossessionChance(PlayerLocation) > 0.0f);
 	}
 
 
