@@ -17,6 +17,7 @@ AInfomorphTutorialTrigger::AInfomorphTutorialTrigger()
 
 	RootComponent = TutorialLauncherVolume;
 
+	PrimaryActorTick.bCanEverTick = true;
 	bDestroyAfterShow = true;
 }
 
@@ -25,10 +26,34 @@ void AInfomorphTutorialTrigger::BeginPlay()
 {
 	Super::BeginPlay();
 	TutorialLauncherVolume->OnComponentBeginOverlap.AddDynamic(this, &AInfomorphTutorialTrigger::OnTutorialLauncherBeginOverlap);
+
+	if (TutorialLifeTime > 0.0f)
+	{
+		bDestroyAfterShow = false;
+	}
+}
+
+void AInfomorphTutorialTrigger::Tick(float DeltaTime)
+{
+	if (bAlreadyShown && TutorialLifeTime > 0.0f)
+	{
+		TutorialLifeTime -= DeltaTime;
+
+		if (TutorialLifeTime <= 0.0f)
+		{
+			TutorialWidget->CloseTutorial();
+			Destroy();
+		}
+	}
 }
 
 void AInfomorphTutorialTrigger::OnTutorialLauncherBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	if (bAlreadyShown)
+	{
+		return;
+	}
+
 	AInfomorphUE4Character* Character = Cast<AInfomorphUE4Character>(OtherActor);
 	if(Character == nullptr)
 	{
@@ -44,6 +69,7 @@ void AInfomorphTutorialTrigger::OnTutorialLauncherBeginOverlap(UPrimitiveCompone
 	TutorialWidget = CreateWidget<UInfomorphTutorialWidget>(PlayerController, TutorialWidgetClass.Get());
 	TutorialWidget->SetText(TutorialText);
 	TutorialWidget->Show(PlayerController);
+	bAlreadyShown = true;
 
 	if(bDestroyAfterShow)
 	{
