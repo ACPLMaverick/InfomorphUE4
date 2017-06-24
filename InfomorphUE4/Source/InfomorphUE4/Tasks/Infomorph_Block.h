@@ -46,5 +46,4 @@ struct FBlockMemory
 {
 	float RemainingTime;
 	float LastBlockTime;
-	float PreviousMaxSpeed;
 };

@@ -50,8 +50,6 @@ void UInfomorphSkillPossession::OnPossessionTimerCompleted()
 {
 	InfomorphPC->StopFeedback();
 	InfomorphPC->PossessNewCharacter(CharacterToPossess);
-	InfomorphPC->ResetLookMultiplier();
-	InfomorphPC->ResetMovementMultiplier();
 }
 
 void UInfomorphSkillPossession::OnCheckIfPossessableTimerCompleted()
@@ -133,7 +131,6 @@ void UInfomorphSkillPossession::StartUsing(AInfomorphPlayerController* Infomorph
 
 				LastUsedTime = FPlatformTime::Seconds();
 
-				InfomorphPC->SetLookMultiplier(0.0f);
 				InfomorphPC->PlayFeedback(BuildUpVibrationEffect);
 				BuildUpTimer = 0.0f;
 				InfomorphPC->GetWorldTimerManager().SetTimer(BuildUpTimerHandle, this, &UInfomorphSkillPossession::OnBuildUpTimerCompleted, BuildUpTime);
@@ -149,8 +146,7 @@ void UInfomorphSkillPossession::StopUsing()
 		return;
 	}
 
-	InfomorphPC->ResetLookMultiplier();
-	InfomorphPC->ResetMovementMultiplier();
+	InfomorphPC->SetMovementMultiplier(1.0f);
 	InfomorphPC->StopFeedback();
 	InfomorphPC->GetWorldTimerManager().ClearTimer(BuildUpTimerHandle);
 	InfomorphPC->GetWorldTimerManager().ClearTimer(PossessingTimerHandle);
