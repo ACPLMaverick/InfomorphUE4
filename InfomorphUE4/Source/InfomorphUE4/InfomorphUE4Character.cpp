@@ -254,7 +254,6 @@ AInfomorphUE4Character::AInfomorphUE4Character()
 	GetCharacterMovement()->JumpZVelocity = 400.f;
 	GetCharacterMovement()->AirControl = 0.2f;
 	GetCharacterMovement()->MaxWalkSpeed = 375.0f;
-	GetCharacterMovement()->MaxWalkSpeedCrouched = 100.0f;
 	GetCharacterMovement()->GetNavAgentPropertiesRef().bCanCrouch = true;
 
 	if(GetMesh() != nullptr)
@@ -337,6 +336,8 @@ void AInfomorphUE4Character::BeginPlay()
 
 	InitialLocation = GetActorLocation();
 
+	MovementState = EMovementState::Normal;
+
 	Super::BeginPlay();
 }
 
@@ -365,11 +366,13 @@ void AInfomorphUE4Character::Tick(float DeltaSeconds)
 
 	if(bIsDodging)
 	{
-		AddMovementInput(DodgeWorldDirection, CharacterStats.DodgeSpeed);
+		AddMovementInput(DodgeWorldDirection);
 	}
 	else
 	{
 		GetCharacterMovement()->bOrientRotationToMovement = !IsCameraLocked();
+
+		GetCharacterMovement()->MaxWalkSpeed = CharacterStats.MaxSpeed * (IsInStealthMode() || IsBlocking() || IsCameraLocked() || MovementState != EMovementState::Normal ? 0.5f : 1.0f);
 	}
 
 	if(PrepareAttackTime > 0.0f)
@@ -386,6 +389,11 @@ void AInfomorphUE4Character::Tick(float DeltaSeconds)
 
 void AInfomorphUE4Character::PossessedBy(AController* NewController)
 {
+	AInfomorphBaseAIController* OldController = Cast<AInfomorphBaseAIController>(GetController());
+	if(OldController != nullptr)
+	{
+		OldController->PauseBehaviorTree("Unpossessed");
+	}
 	Super::PossessedBy(NewController);
 
 	if(NewController == nullptr)
@@ -394,7 +402,6 @@ void AInfomorphUE4Character::PossessedBy(AController* NewController)
 	}
 
 	ResetState();
-	GetCharacterMovement()->MaxWalkSpeed = 375.0f;
 
 	AInfomorphPlayerController* InfomorphPC = Cast<AInfomorphPlayerController>(NewController);
 	if(InfomorphPC != nullptr)
@@ -410,6 +417,7 @@ void AInfomorphUE4Character::PossessedBy(AController* NewController)
 		AInfomorphBaseAIController* AIController = Cast<AInfomorphBaseAIController>(NewController);
 		if(AIController != nullptr)
 		{
+			AIController->ResumeBehaviorTree();
 			Confuse(CharacterStats.ConfusionUnpossessedTime);
 			InteractionSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 			InteractionSphere->bGenerateOverlapEvents = false;
@@ -496,21 +504,11 @@ void AInfomorphUE4Character::FellOutOfWorld(const UDamageType& DamageType)
 void AInfomorphUE4Character::StartBlock()
 {
 	bIsBlocking = true;
-	AInfomorphPlayerController* InfomorphPC = Cast<AInfomorphPlayerController>(GetController());
-	if(InfomorphPC != nullptr)
-	{
-		InfomorphPC->SetMovementMultiplier(0.5f);
-	}
 }
 
 void AInfomorphUE4Character::EndBlock()
 {
 	bIsBlocking = false;
-	AInfomorphPlayerController* InfomorphPC = Cast<AInfomorphPlayerController>(GetController());
-	if(InfomorphPC != nullptr)
-	{
-		InfomorphPC->ResetMovementMultiplier();
-	}
 }
 
 void AInfomorphUE4Character::Dodge(const FVector& DodgeDirection)
@@ -541,6 +539,7 @@ void AInfomorphUE4Character::Dodge(const FVector& DodgeDirection)
 		DodgeWorldDirection.Z = 0.0f;
 	}
 	DodgeWorldDirection.Normalize();
+	GetCharacterMovement()->MaxWalkSpeed = CharacterStats.DodgeSpeed;
 }
 
 void AInfomorphUE4Character::EnterStealthMode()
@@ -550,7 +549,6 @@ void AInfomorphUE4Character::EnterStealthMode()
 		return;
 	}
 
-	Crouch();
 	bIsInStealthMode = true;
 }
 
@@ -561,7 +559,6 @@ void AInfomorphUE4Character::ExitStealthMode()
 		return;
 	}
 
-	UnCrouch();
 	bIsInStealthMode = false;
 }
 
@@ -580,12 +577,6 @@ void AInfomorphUE4Character::Attack()
 	{
 		CurrentWeapon->SetDamage(CharacterStats.LightAttackDamage);
 	}
-	BeforeAttackDirection = GetCharacterMovement()->Velocity;
-	if(BeforeAttackDirection.Size() > 0.0f)
-	{
-		BeforeAttackDirection.Normalize();
-		PrepareAttackTime = 0.5f;
-	}
 }
 
 void AInfomorphUE4Character::HeavyAttack()
@@ -602,12 +593,6 @@ void AInfomorphUE4Character::HeavyAttack()
 	if(CurrentWeapon != nullptr)
 	{
 		CurrentWeapon->SetDamage(CharacterStats.HeavyAttackDamage);
-	}
-	BeforeAttackDirection = GetCharacterMovement()->Velocity;
-	if(BeforeAttackDirection.Size() > 0.0f)
-	{
-		BeforeAttackDirection.Normalize();
-		PrepareAttackTime = 0.5f;
 	}
 }
 
@@ -633,12 +618,6 @@ void AInfomorphUE4Character::SpecialAttack()
 	{
 		CurrentWeapon->SetDamage(CharacterStats.SpecialAttackDamage);
 	}
-	BeforeAttackDirection = GetCharacterMovement()->Velocity;
-	if(BeforeAttackDirection.Size() > 0.0f)
-	{
-		BeforeAttackDirection.Normalize();
-		PrepareAttackTime = 0.5f;
-	}
 }
 
 void AInfomorphUE4Character::SpecialAbility()
@@ -660,6 +639,7 @@ bool AInfomorphUE4Character::LockCameraOnTarget(AActor* Target)
 		return false;
 	}
 
+	MovementState = EMovementState::TargetLocked;
 	CameraTarget = Target;
 	OnCameraLocked(CameraTarget);
 
@@ -676,6 +656,8 @@ void AInfomorphUE4Character::UnlockCamera()
 	{
 		OnCameraUnlocked(CameraTarget);
 	}
+
+	MovementState = EMovementState::Normal;
 	bIsCameraLocked = false;
 	CameraTarget = nullptr;
 	GetCharacterMovement()->bOrientRotationToMovement = true;

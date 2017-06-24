@@ -9,6 +9,14 @@
 #include "InfomorphBaseAIController.h"
 #include "InfomorphUE4Character.generated.h"
 
+UENUM(BlueprintType)
+enum class EMovementState : uint8
+{
+	Normal UMETA(DisplayName = "Normal"),
+	Patrol UMETA(DisplayName = "Patrol"),
+	TargetLocked UMETA(DisplayName = "Target Locked")
+};
+
 USTRUCT(Blueprintable, BlueprintType)
 struct FCharacterStats
 {
@@ -59,6 +67,8 @@ public:
 		float SpecialAttackCooldown;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Abilities)
 		bool bCanEverDodge;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Movement)
+		float MaxSpeed;
 
 	float CurrentConsciousness;
 	float CurrentEnergy;
@@ -139,6 +149,9 @@ protected:
 	bool bIsDodgingZeroInput;
 	bool bWasHit;
 	bool bIsBlocking;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement)
+		EMovementState MovementState;
 
 public:
 	UPROPERTY(EditAnywhere, Category = AI)
@@ -222,6 +235,8 @@ public:
 		FORCEINLINE bool IsBlocking() const { return bIsBlocking; }
 	UFUNCTION(BlueprintCallable, Category = Info)
 		FORCEINLINE bool IsDead() const { return CharacterStats.CurrentConsciousness <= 0.0f; }
+	UFUNCTION(BlueprintCallable, Category = Movement)
+		FORCEINLINE EMovementState GetMovementState() const { return MovementState; }
 
 	FORCEINLINE bool IsActionsDisabled() const
 	{
@@ -279,6 +294,12 @@ public:
 			bIsDodgingZeroInput =
 			bWasHit =
 			bIsBlocking = false;
+	}
+
+	UFUNCTION(BlueprintCallable, Category = Movement)
+		void SetMovementState(EMovementState NewMovementState)
+	{
+		MovementState = NewMovementState;
 	}
 
 	UFUNCTION(BlueprintImplementableEvent, Category = Stats)

@@ -38,6 +38,12 @@ EBTNodeResult::Type UInfomorph_ChaseTarget::ExecuteTask(UBehaviorTreeComponent& 
 		return EBTNodeResult::Failed;
 	}
 
+	AInfomorphUE4Character* AICharacter = Cast<AInfomorphUE4Character>(InfomorphAIController->GetPawn());
+	if(AICharacter != nullptr)
+	{
+		AICharacter->SetMovementState(EMovementState::TargetLocked);
+	}
+
 	if(bGenerateChaseOffset)
 	{
 		FVector ChaseOffset = FRotator(0.0f, FMath::FRandRange(-80.0f, 80.0f), 0.0f).RotateVector(TargetActor->GetActorForwardVector()) * AcceptableRadius * 0.8f;

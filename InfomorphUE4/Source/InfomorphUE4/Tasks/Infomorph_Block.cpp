@@ -32,13 +32,6 @@ EBTNodeResult::Type UInfomorph_Block::ExecuteTask(UBehaviorTreeComponent& OwnerC
 
 	MyMemory->LastBlockTime = CurrentTime;
 	MyMemory->RemainingTime = FMath::FRandRange(FMath::Max(0.0f, BlockTime - RandomDeviation), (BlockTime + RandomDeviation));
-	
-	AInfomorphUE4Character* Character = Cast<AInfomorphUE4Character>(InfomorphAIController->GetPawn());
-	if(Character != nullptr)
-	{
-		MyMemory->PreviousMaxSpeed = Character->GetCharacterMovement()->MaxWalkSpeed;
-		Character->GetCharacterMovement()->MaxWalkSpeed *= 0.5f;
-	}
 
 	return InfomorphAIController->StartBlock() ? EBTNodeResult::InProgress : EBTNodeResult::Failed;
 }
@@ -94,13 +87,6 @@ void UInfomorph_Block::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* 
 	if(InfomorphAIController != nullptr)
 	{
 		InfomorphAIController->EndBlock();
-
-		AInfomorphUE4Character* Character = Cast<AInfomorphUE4Character>(InfomorphAIController->GetPawn());
-		if(Character != nullptr)
-		{
-			FBlockMemory* MyMemory = (FBlockMemory*)NodeMemory;
-			Character->GetCharacterMovement()->MaxWalkSpeed = MyMemory->PreviousMaxSpeed;
-		}
 	}
 }
 

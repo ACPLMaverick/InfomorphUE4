@@ -39,12 +39,13 @@ EBTNodeResult::Type UInfomorph_WalkTo::ExecuteTask(UBehaviorTreeComponent& Owner
 		return EBTNodeResult::Failed;
 	}
 
-	ACharacter* PossessedCharacter = Cast<ACharacter>(InfomorphAIController->GetPawn());
+	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(InfomorphAIController->GetPawn());
 	if(PossessedCharacter != nullptr)
 	{
 		FWalkToMemory* Memory = reinterpret_cast<FWalkToMemory*>(NodeMemory);
 		Memory->PreviousMaxWalkingSpeed = PossessedCharacter->GetCharacterMovement()->MaxWalkSpeed;
 		PossessedCharacter->GetCharacterMovement()->MaxWalkSpeed = PatrolSpeed;
+		PossessedCharacter->SetMovementState(EMovementState::Patrol);
 	}
 
 	EBTNodeResult::Type NodeResult = PerformMove(InfomorphAIController, OwnerComp.GetBlackboardComponent()->GetValueAsVector(TargetLocationKey.SelectedKeyName));
@@ -91,11 +92,12 @@ void UInfomorph_WalkTo::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8*
 		return;
 	}
 
-	ACharacter* PossessedCharacter = Cast<ACharacter>(InfomorphAIController->GetPawn());
+	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(InfomorphAIController->GetPawn());
 	if(PossessedCharacter != nullptr)
 	{
 		FWalkToMemory* Memory = reinterpret_cast<FWalkToMemory*>(NodeMemory);
 		PossessedCharacter->GetCharacterMovement()->MaxWalkSpeed = Memory->PreviousMaxWalkingSpeed;
+		PossessedCharacter->SetMovementState(EMovementState::Normal);
 	}
 }
 
