@@ -41,6 +41,8 @@ protected:
 	int32 CurrentSelectedSkillIndex;
 
 	class UInfomorphTutorialWidget* CurrentTutorialWidget;
+
+	FVector MoveInput;
 	
 protected:
 	void MoveForward(float Value);

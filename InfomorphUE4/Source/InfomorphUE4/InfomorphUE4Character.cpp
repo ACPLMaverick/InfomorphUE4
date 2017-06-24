@@ -201,6 +201,26 @@ void AInfomorphUE4Character::ProcessPossessionMaterial(float DeltaSeconds)
 	}
 }
 
+void AInfomorphUE4Character::CheckIfInCombatMode()
+{
+	UWorld* World = GetWorld();
+	if(World == nullptr)
+	{
+		return;
+	}
+
+	static const FName TraceTag = TEXT("CombatModeCheckTrace");
+
+	FCollisionObjectQueryParams ObjectQueryParams;
+	ObjectQueryParams.AddObjectTypesToQuery(ECollisionChannel::ECC_Pawn);
+	FCollisionQueryParams TraceParams(TraceTag, true, this);
+	FCollisionShape CollisionShape;
+	CollisionShape.SetSphere(CharacterStats.SightRange);
+
+	TArray<FHitResult> Hits;
+	bIsInCombatMode = World->SweepMultiByObjectType(Hits, GetActorLocation(), GetActorLocation(), FQuat::Identity, ObjectQueryParams, CollisionShape, TraceParams);
+}
+
 void AInfomorphUE4Character::DestroyActor()
 {
 	Destroy();
@@ -251,7 +271,7 @@ AInfomorphUE4Character::AInfomorphUE4Character()
 	// Configure character movement
 	GetCharacterMovement()->bOrientRotationToMovement = true; // Character moves in the direction of input...	
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 540.0f, 0.0f); // ...at this rotation rate
-	GetCharacterMovement()->JumpZVelocity = 400.f;
+	GetCharacterMovement()->JumpZVelocity = 600.f;
 	GetCharacterMovement()->AirControl = 0.2f;
 	GetCharacterMovement()->MaxWalkSpeed = 375.0f;
 	GetCharacterMovement()->GetNavAgentPropertiesRef().bCanCrouch = true;
@@ -385,6 +405,13 @@ void AInfomorphUE4Character::Tick(float DeltaSeconds)
 	{
 		ProcessCameraLocked(DeltaSeconds);
 	}
+
+	CombatModeCheckTimer += DeltaSeconds;
+	if(CombatModeCheckTimer >= 1.0f)
+	{
+		CombatModeCheckTimer = 0.0f;
+		CheckIfInCombatMode();
+	}
 }
 
 void AInfomorphUE4Character::PossessedBy(AController* NewController)
@@ -402,6 +429,7 @@ void AInfomorphUE4Character::PossessedBy(AController* NewController)
 	}
 
 	ResetState();
+	MovementState = EMovementState::Normal;
 
 	AInfomorphPlayerController* InfomorphPC = Cast<AInfomorphPlayerController>(NewController);
 	if(InfomorphPC != nullptr)
@@ -473,6 +501,7 @@ float AInfomorphUE4Character::TakeDamage(float DamageAmount, FDamageEvent const&
 	if(bWasHit)
 	{
 		ResetAttacks();
+		ResetDodging();
 		AInfomorphBaseAIController* InfomorphAIController = Cast<AInfomorphBaseAIController>(GetController());
 		if(InfomorphAIController != nullptr)
 		{
@@ -549,6 +578,7 @@ void AInfomorphUE4Character::EnterStealthMode()
 		return;
 	}
 
+	Crouch();
 	bIsInStealthMode = true;
 }
 
@@ -559,6 +589,7 @@ void AInfomorphUE4Character::ExitStealthMode()
 		return;
 	}
 
+	UnCrouch();
 	bIsInStealthMode = false;
 }
 
@@ -665,6 +696,7 @@ void AInfomorphUE4Character::UnlockCamera()
 
 void AInfomorphUE4Character::Dedigitalize()
 {
+	ResetState();
 	UGameplayStatics::PlaySoundAtLocation(GetWorld(), DeathSound, GetActorLocation());
 	AInfomorphPlayerController* InfomorphPC = Cast<AInfomorphPlayerController>(GetController());
 	if(InfomorphPC == nullptr)

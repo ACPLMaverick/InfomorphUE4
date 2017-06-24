@@ -17,12 +17,12 @@ void AInfomorphPlayerController::MoveForward(float Value)
 	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
 	if(PossessedCharacter != nullptr && Value != 0.0f && !PossessedCharacter->IsActionsDisabled())
 	{
-		Value = ((int)(Value * 2.0f)) * 0.5f;
 		const FRotator Rotation = GetControlRotation();
 		const FRotator YawRotation(0, Rotation.Yaw, 0);
 
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-		PossessedCharacter->AddMovementInput(Direction, Value);
+		//PossessedCharacter->AddMovementInput(Direction, Value);
+		MoveInput += Direction * Value;
 		LastMovedTimer = 0.0f;
 	}
 }
@@ -32,12 +32,12 @@ void AInfomorphPlayerController::MoveRight(float Value)
 	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
 	if(PossessedCharacter != nullptr && Value != 0.0f && !PossessedCharacter->IsActionsDisabled())
 	{
-		Value = ((int)(Value * 2.0f)) * 0.5f;
 		const FRotator Rotation = GetControlRotation();
 		const FRotator YawRotation(0, Rotation.Yaw, 0);
 
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-		PossessedCharacter->AddMovementInput(Direction, Value);
+		//PossessedCharacter->AddMovementInput(Direction, Value);
+		MoveInput += Direction * Value;
 		LastMovedTimer = 0.0f;
 	}
 }
@@ -240,7 +240,7 @@ void AInfomorphPlayerController::PerformInteraction()
 	}
 
 	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
-	if(PossessedCharacter != nullptr && !PossessedCharacter->IsActionsDisabled())
+	if(PossessedCharacter != nullptr && !PossessedCharacter->IsActionsDisabled() && !PossessedCharacter->IsInCombatMode())
 	{
 		if(IsInteractionPossible())
 		{
@@ -326,7 +326,8 @@ void AInfomorphPlayerController::PerformJump()
 		{
 			PossessedCharacter->ExitStealthMode();
 		}
-		PossessedCharacter->Jump();
+		//PossessedCharacter->Jump();
+		PossessedCharacter->SetWantsToJump(true);
 	}
 }
 
@@ -703,13 +704,22 @@ void AInfomorphPlayerController::Tick(float DeltaSeconds)
 	{
 		return;
 	}
-	
+
 	FColor LogColor = FColor::Yellow;
 
 	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
 
 	if(PossessedCharacter != nullptr && !PossessedCharacter->IsDead())
 	{
+		float Size = MoveInput.Size();
+		if(Size > 0.0f)
+		{
+			MoveInput.Normalize();
+			PossessedCharacter->AddMovementInput(MoveInput, FMath::Round(Size * 2.0f) * 0.5);
+
+			MoveInput = FVector::ZeroVector;
+		}
+
 		LookForInteractables(DeltaSeconds);
 
 		if(InputComponent != nullptr && PossessedCharacter->IsCameraLocked())
