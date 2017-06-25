@@ -402,6 +402,18 @@ public:
 		return (GetPossessionChance(PlayerLocation) > 0.0f);
 	}
 
+	UFUNCTION(BlueprintCallable, Category = Weapon)
+		FORCEINLINE AInfomorphWeapon* GetCurrentWeapon()
+	{
+		return CurrentWeapon;
+	}
+
+	UFUNCTION(BlueprintCallable, Category = Shield)
+		FORCEINLINE AInfomorphShield* GetCurrentShield()
+	{
+		return CurrentShield;
+	}
+
 
 	UFUNCTION(BlueprintCallable, Category = Stats)
 		void SetCurrentConsciousness(float value)
