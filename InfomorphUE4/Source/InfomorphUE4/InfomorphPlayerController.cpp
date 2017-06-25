@@ -549,6 +549,11 @@ AActor* AInfomorphPlayerController::GetNextActorInDirection(float MaxDistance, A
 			{
 				continue;
 			}
+			AInfomorphUE4Character* InfomorphCharacter = Cast<AInfomorphUE4Character>(Candidate);
+			if(InfomorphCharacter != nullptr && InfomorphCharacter->IsDead())
+			{
+				continue;
+			}
 			ActorsProcessed.Add(Candidate);
 
 			FVector CurrentToCandidate = Candidate->GetActorLocation() - CurrentActor->GetActorLocation();
