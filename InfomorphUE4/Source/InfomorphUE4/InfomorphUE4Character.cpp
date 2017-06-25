@@ -268,6 +268,11 @@ void AInfomorphUE4Character::ProcessFalling(float DeltaSeconds)
 		ResetDodging();
 		ResetAttacks();
 		FallingTimer += DeltaSeconds;
+		AInfomorphPlayerController* InfomorphPlayerController = Cast<AInfomorphPlayerController>(GetController());
+		if(InfomorphPlayerController != nullptr)
+		{
+			InfomorphPlayerController->SetMovementMultiplier(0.0f);
+		}
 	}
 }
 
