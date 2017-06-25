@@ -96,7 +96,8 @@ public:
 	FORCEINLINE float GetLastMovedTimer() const { return LastMovedTimer; }
 	FORCEINLINE float GetLookTimerTreshold() const { return LookTimerThreshold; }
 
-	FORCEINLINE void SetMovementMultiplier(float NewMultiplier)
+	UFUNCTION(BlueprintCallable, Category = Movement)
+		void SetMovementMultiplier(float NewMultiplier)
 	{
 		MovementMultiplier = NewMultiplier;
 	}

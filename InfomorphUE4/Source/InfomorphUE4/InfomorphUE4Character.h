@@ -151,6 +151,9 @@ protected:
 	bool bIsBlocking;
 	bool bWantsToJump;
 
+	bool bIsFalling;
+	float FallingTimer;
+
 	float CombatModeCheckTimer;
 	bool bIsInCombatMode;
 
@@ -166,6 +169,7 @@ protected:
 	void ProcessInteractionTarget(float DeltaSeconds);
 	void ProcessPossessionMaterial(float DeltaSeconds);
 	void CheckIfInCombatMode();
+	void ProcessFalling(float DeltaSeconds);
 
 	void DestroyActor();
 
@@ -243,6 +247,10 @@ public:
 		FORCEINLINE bool IsInCombatMode() const { return bIsInCombatMode; }
 	UFUNCTION(BlueprintCallable, Category = Movement)
 		FORCEINLINE bool WantsToJump() const { return bWantsToJump; }
+	UFUNCTION(BlueprintCallable, Category = Movement)
+		FORCEINLINE bool IsFalling() const { return bIsFalling; }
+	UFUNCTION(BlueprintCallable, Category = Movement)
+		FORCEINLINE bool IsFallingFromHigh() const { return FallingTimer >= 1.1f; }
 	UFUNCTION(BlueprintCallable, Category = Movement)
 		FORCEINLINE EMovementState GetMovementState() const { return MovementState; }
 
@@ -437,4 +445,3 @@ public:
 	FORCEINLINE const FCharacterStats& GetCharacterStats() const { return CharacterStats; }
 	FORCEINLINE class USphereComponent* GetInteractionSphere() const { return InteractionSphere; }
 };
-
