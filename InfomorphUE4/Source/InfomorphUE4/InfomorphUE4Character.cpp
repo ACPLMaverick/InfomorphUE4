@@ -521,18 +521,31 @@ float AInfomorphUE4Character::TakeDamage(float DamageAmount, FDamageEvent const&
 	}
 
 	float EnergyLost = ActualDamage * 0.25f;
-	if(bIsBlocking)
+	AInfomorphUE4Character* Predator = Cast<AInfomorphUE4Character>(DamageCauser);
+	float Dot = 0.0f;
+	if(Predator != nullptr)
+	{
+		FVector PredatorForward = Predator->GetActorForwardVector();
+		FVector Forward = GetActorForwardVector();
+		Dot = FVector::DotProduct(PredatorForward, Forward);
+	}
+	if(bIsBlocking && Dot < -0.5f)
 	{
 		EnergyLost = CharacterStats.BlockEnergyCost * ActualDamage;
 		ActualDamage = 0.0f;
 		if(EnergyLost > CharacterStats.CurrentEnergy)
 		{
-			ActualDamage = EnergyLost - CharacterStats.CurrentEnergy;
 			EnergyLost = CharacterStats.CurrentEnergy;
 			EndBlock();
+			bShieldBroken = true;
+			LogOnScreen("Shield broken!");
 		}
 		else
 		{
+			if(Predator != nullptr)
+			{
+				Predator->Confuse(1.0f);
+			}
 			if(CurrentShield != nullptr)
 			{
 				CurrentShield->PlayHitSound();
@@ -548,7 +561,7 @@ float AInfomorphUE4Character::TakeDamage(float DamageAmount, FDamageEvent const&
 	CharacterStats.CurrentEnergy = FMath::Clamp(CharacterStats.CurrentEnergy - EnergyLost, 0.0f, CharacterStats.BaseEnergy);
 	LastActionTime = GetWorld()->GetRealTimeSeconds();
 	CharacterStats.CurrentConsciousness = FMath::Clamp(CharacterStats.CurrentConsciousness - ActualDamage, 0.0f, CharacterStats.BaseConsciousness);
-	bWasHit = ActualDamage > 0.0f;
+	bWasHit = ActualDamage > 0.0f && !IsConfused() && !IsShieldBroken();
 
 	if(bWasHit)
 	{
@@ -652,6 +665,15 @@ void AInfomorphUE4Character::ExitStealthMode()
 
 void AInfomorphUE4Character::Attack()
 {
+	if(IsAttacking())
+	{
+		if(bAttackQueueEnabled)
+		{
+			bWantsToLightAttack = !(bWantsToHeavyAttack || bWantsToSpecialAttack);
+		}
+		return;
+	}
+
 	if(CharacterStats.CurrentEnergy - CharacterStats.LightAttackEnergyCost < 0.0f)
 	{
 		EventNotEnoughEnergy();
@@ -669,6 +691,15 @@ void AInfomorphUE4Character::Attack()
 
 void AInfomorphUE4Character::HeavyAttack()
 {
+	if(IsAttacking())
+	{
+		if(bAttackQueueEnabled)
+		{
+			bWantsToHeavyAttack = !(bWantsToLightAttack || bWantsToSpecialAttack);
+		}
+		return;
+	}
+
 	if(CharacterStats.CurrentEnergy - CharacterStats.HeavyAttackEnergyCost < 0.0f)
 	{
 		EventNotEnoughEnergy();
@@ -686,6 +717,15 @@ void AInfomorphUE4Character::HeavyAttack()
 
 void AInfomorphUE4Character::SpecialAttack()
 {
+	if(IsAttacking())
+	{
+		if(bAttackQueueEnabled)
+		{
+			bWantsToSpecialAttack = !(bWantsToLightAttack || bWantsToHeavyAttack);
+		}
+		return;
+	}
+
 	if(CharacterStats.CurrentEnergy - CharacterStats.SpecialAttackEnergyCost < 0.0f)
 	{
 		EventNotEnoughEnergy();

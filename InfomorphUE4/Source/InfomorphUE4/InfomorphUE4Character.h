@@ -151,6 +151,14 @@ protected:
 	bool bIsBlocking;
 	bool bWantsToJump;
 
+	bool bShieldBroken;
+
+	bool bWantsToLightAttack;
+	bool bWantsToHeavyAttack;
+	bool bWantsToSpecialAttack;
+
+	bool bAttackQueueEnabled;
+
 	bool bIsFalling;
 	float FallingTimer;
 
@@ -241,6 +249,8 @@ public:
 		FORCEINLINE bool IsDodgingZeroInput() const { return bIsDodgingZeroInput; }
 	UFUNCTION(BlueprintCallable, Category = Block)
 		FORCEINLINE bool IsBlocking() const { return bIsBlocking; }
+	UFUNCTION(BlueprintCallable, Category = Block)
+		FORCEINLINE bool IsShieldBroken() const { return bShieldBroken; }
 	UFUNCTION(BlueprintCallable, Category = Info)
 		FORCEINLINE bool IsDead() const { return CharacterStats.CurrentConsciousness <= 0.0f; }
 	UFUNCTION(BlueprintCallable, Category = Info)
@@ -256,7 +266,18 @@ public:
 
 	FORCEINLINE bool IsActionsDisabled() const
 	{
-		return bIsLightAttack || bIsHeavyAttack || bIsDodging || bIsSpecialAttack || bWasHit || CharacterStats.bIsConfused || IsDead() || InteractionTarget != nullptr;
+		return bShieldBroken || bIsDodging || bWasHit || CharacterStats.bIsConfused || IsDead() || InteractionTarget != nullptr;
+	}
+
+	FORCEINLINE bool IsAttacking() const
+	{
+		return bIsLightAttack || bIsHeavyAttack || bIsSpecialAttack;
+	}
+
+	UFUNCTION(BlueprintCallable, Category = Block)
+		void ResetShieldBroken()
+	{
+		bShieldBroken = false;
 	}
 
 	UFUNCTION(BlueprintCallable, Category = Attack) 
@@ -266,12 +287,32 @@ public:
 		bIsHeavyAttack = false;
 		bIsSpecialAttack = false;
 		PrepareAttackTime = 0.0f;
+
+		if(bWantsToLightAttack)
+		{
+			Attack();
+		}
+		if(bWantsToHeavyAttack)
+		{
+			HeavyAttack();
+		}
+		if(bWantsToSpecialAttack)
+		{
+			SpecialAttack();
+		}
+		bWantsToHeavyAttack = bWantsToLightAttack = bWantsToSpecialAttack = false;
 	}
 
 	UFUNCTION(BlueprintCallable, Category = Movement)
 		void SetWantsToJump(bool bNewWantsToJump)
 	{
 		bWantsToJump = bNewWantsToJump;
+	}
+
+	UFUNCTION(BlueprintCallable, Category = Attack)
+		void SetAttackQueueEnabled(bool bEnabled)
+	{
+		bAttackQueueEnabled = bEnabled;
 	}
 
 	UFUNCTION(BlueprintCallable, Category = Damage) 

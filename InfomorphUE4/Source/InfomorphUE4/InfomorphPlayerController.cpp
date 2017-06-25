@@ -15,7 +15,7 @@
 void AInfomorphPlayerController::MoveForward(float Value)
 {
 	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
-	if(PossessedCharacter != nullptr && Value != 0.0f && !PossessedCharacter->IsActionsDisabled())
+	if(PossessedCharacter != nullptr && Value != 0.0f && !PossessedCharacter->IsActionsDisabled() && !PossessedCharacter->IsAttacking())
 	{
 		const FRotator Rotation = GetControlRotation();
 		const FRotator YawRotation(0, Rotation.Yaw, 0);
@@ -30,7 +30,7 @@ void AInfomorphPlayerController::MoveForward(float Value)
 void AInfomorphPlayerController::MoveRight(float Value)
 {
 	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
-	if(PossessedCharacter != nullptr && Value != 0.0f && !PossessedCharacter->IsActionsDisabled())
+	if(PossessedCharacter != nullptr && Value != 0.0f && !PossessedCharacter->IsActionsDisabled() && !PossessedCharacter->IsAttacking())
 	{
 		const FRotator Rotation = GetControlRotation();
 		const FRotator YawRotation(0, Rotation.Yaw, 0);
@@ -240,7 +240,7 @@ void AInfomorphPlayerController::PerformInteraction()
 	}
 
 	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
-	if(PossessedCharacter != nullptr && !PossessedCharacter->IsActionsDisabled() && !PossessedCharacter->IsInCombatMode())
+	if(PossessedCharacter != nullptr && !PossessedCharacter->IsActionsDisabled() && !PossessedCharacter->IsInCombatMode() && !PossessedCharacter->IsAttacking())
 	{
 		if(IsInteractionPossible())
 		{
@@ -263,9 +263,9 @@ void AInfomorphPlayerController::PerformSpecialAbility()
 	}
 
 	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
-	if(PossessedCharacter != nullptr && !PossessedCharacter->IsActionsDisabled())
+	if(PossessedCharacter != nullptr && !PossessedCharacter->IsActionsDisabled() && !PossessedCharacter->IsAttacking())
 	{
-		LogOnScreen("SpecialAbility");
+		//LogOnScreen("SpecialAbility");
 	}
 }
 
@@ -277,7 +277,7 @@ void AInfomorphPlayerController::PerformSpecialPossessedCharacterAbility()
 	}
 
 	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
-	if(PossessedCharacter != nullptr && !PossessedCharacter->IsActionsDisabled())
+	if(PossessedCharacter != nullptr && !PossessedCharacter->IsActionsDisabled() && !PossessedCharacter->IsAttacking())
 	{
 		if(PossessedCharacter->IsInStealthMode())
 		{
@@ -320,7 +320,7 @@ void AInfomorphPlayerController::PerformJump()
 	}
 
 	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
-	if(PossessedCharacter != nullptr && !PossessedCharacter->IsActionsDisabled())
+	if(PossessedCharacter != nullptr && !PossessedCharacter->IsActionsDisabled() && !PossessedCharacter->IsAttacking())
 	{
 		if(PossessedCharacter->IsInStealthMode())
 		{
@@ -334,7 +334,7 @@ void AInfomorphPlayerController::PerformJump()
 void AInfomorphPlayerController::PerformStartSkillUsage()
 {
 	AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
-	if(PossessedCharacter->IsActionsDisabled())
+	if(PossessedCharacter->IsActionsDisabled() || PossessedCharacter->IsAttacking())
 	{
 		return;
 	}
