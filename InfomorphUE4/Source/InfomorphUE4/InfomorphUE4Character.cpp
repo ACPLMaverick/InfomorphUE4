@@ -104,11 +104,11 @@ void AInfomorphUE4Character::ProcessCameraLocked(float DeltaSeconds)
 		{
 			if(LastMovedTimer > 0.5f)
 			{
-				Controller->SetControlRotation(FMath::RInterpTo(Controller->GetControlRotation(), LookRotation, DeltaSeconds, 3.0f));
+				Controller->SetControlRotation(FMath::RInterpTo(Controller->GetControlRotation(), LookRotation, DeltaSeconds, 8.0f));
 			}
 			else
 			{
-				Controller->SetControlRotation(FMath::RInterpTo(Controller->GetControlRotation(), LookRotation, DeltaSeconds, 5.0f));
+				Controller->SetControlRotation(FMath::RInterpTo(Controller->GetControlRotation(), LookRotation, DeltaSeconds, 10.0f));
 			}
 
 		}
@@ -392,7 +392,7 @@ void AInfomorphUE4Character::Tick(float DeltaSeconds)
 	{
 		GetCharacterMovement()->bOrientRotationToMovement = !IsCameraLocked();
 
-		GetCharacterMovement()->MaxWalkSpeed = CharacterStats.MaxSpeed * (IsInStealthMode() || IsBlocking() || IsCameraLocked() || MovementState != EMovementState::Normal ? 0.5f : 1.0f);
+		GetCharacterMovement()->MaxWalkSpeed = CharacterStats.MaxSpeed * (IsInStealthMode() || IsBlocking() || MovementState == EMovementState::Patrol ? 0.5f : 1.0f);
 	}
 
 	if(PrepareAttackTime > 0.0f)
