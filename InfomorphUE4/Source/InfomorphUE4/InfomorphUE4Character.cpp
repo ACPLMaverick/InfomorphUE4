@@ -221,6 +221,40 @@ void AInfomorphUE4Character::CheckIfInCombatMode()
 	bIsInCombatMode = World->SweepMultiByObjectType(Hits, GetActorLocation(), GetActorLocation(), FQuat::Identity, ObjectQueryParams, CollisionShape, TraceParams);
 }
 
+void AInfomorphUE4Character::ProcessFalling(float DeltaSeconds)
+{
+	float VelocityZ = GetCharacterMovement()->Velocity.Z;
+	if(bIsFalling)
+	{
+		if(VelocityZ >= 0.0f)
+		{
+			if(IsFallingFromHigh())
+			{
+				float Damage = FallingTimer * 10.0f;
+				CharacterStats.CurrentConsciousness = FMath::Clamp(CharacterStats.CurrentConsciousness - Damage, 0.0f, CharacterStats.BaseConsciousness);
+			}
+
+			bIsFalling = false;
+			FallingTimer = 0.0f;
+		}
+	}
+	else
+	{
+		if(VelocityZ < 0.0f)
+		{
+			bIsFalling = true;
+		}
+	}
+
+	if(bIsFalling)
+	{
+		ResetBlocking();
+		ResetDodging();
+		ResetAttacks();
+		FallingTimer += DeltaSeconds;
+	}
+}
+
 void AInfomorphUE4Character::DestroyActor()
 {
 	Destroy();
@@ -412,6 +446,8 @@ void AInfomorphUE4Character::Tick(float DeltaSeconds)
 		CombatModeCheckTimer = 0.0f;
 		CheckIfInCombatMode();
 	}
+
+	ProcessFalling(DeltaSeconds);
 }
 
 void AInfomorphUE4Character::PossessedBy(AController* NewController)
@@ -542,6 +578,11 @@ void AInfomorphUE4Character::EndBlock()
 
 void AInfomorphUE4Character::Dodge(const FVector& DodgeDirection)
 {
+	if(IsFalling())
+	{
+		return;
+	}
+
 	if(!CharacterStats.bCanEverDodge || CharacterStats.CurrentEnergy - CharacterStats.DodgeEnergyCost < 0.0f)
 	{
 		return;

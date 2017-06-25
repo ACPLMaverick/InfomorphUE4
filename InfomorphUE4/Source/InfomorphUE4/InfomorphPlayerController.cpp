@@ -711,11 +711,11 @@ void AInfomorphPlayerController::Tick(float DeltaSeconds)
 
 	if(PossessedCharacter != nullptr && !PossessedCharacter->IsDead())
 	{
-		float Size = MoveInput.Size();
+		float Size = MoveInput.Size() * MovementMultiplier;
 		if(Size > 0.0f)
 		{
 			MoveInput.Normalize();
-			PossessedCharacter->AddMovementInput(MoveInput, FMath::Round(Size * 2.0f) * 0.5);
+			PossessedCharacter->AddMovementInput(MoveInput, FMath::RoundToInt(Size * 2.0f) * 0.5f * MovementMultiplier);
 
 			MoveInput = FVector::ZeroVector;
 		}
