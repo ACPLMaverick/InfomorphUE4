@@ -149,6 +149,13 @@ protected:
 	bool bIsDodgingZeroInput;
 	bool bWasHit;
 	bool bIsBlocking;
+	bool bWantsToJump;
+
+	bool bIsFalling;
+	float FallingTimer;
+
+	float CombatModeCheckTimer;
+	bool bIsInCombatMode;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement)
 		EMovementState MovementState;
@@ -161,7 +168,8 @@ protected:
 	void ProcessCameraLocked(float DeltaSeconds);
 	void ProcessInteractionTarget(float DeltaSeconds);
 	void ProcessPossessionMaterial(float DeltaSeconds);
-
+	void CheckIfInCombatMode();
+	void ProcessFalling(float DeltaSeconds);
 
 	void DestroyActor();
 
@@ -235,6 +243,14 @@ public:
 		FORCEINLINE bool IsBlocking() const { return bIsBlocking; }
 	UFUNCTION(BlueprintCallable, Category = Info)
 		FORCEINLINE bool IsDead() const { return CharacterStats.CurrentConsciousness <= 0.0f; }
+	UFUNCTION(BlueprintCallable, Category = Info)
+		FORCEINLINE bool IsInCombatMode() const { return bIsInCombatMode; }
+	UFUNCTION(BlueprintCallable, Category = Movement)
+		FORCEINLINE bool WantsToJump() const { return bWantsToJump; }
+	UFUNCTION(BlueprintCallable, Category = Movement)
+		FORCEINLINE bool IsFalling() const { return bIsFalling; }
+	UFUNCTION(BlueprintCallable, Category = Movement)
+		FORCEINLINE bool IsFallingFromHigh() const { return FallingTimer >= 1.1f; }
 	UFUNCTION(BlueprintCallable, Category = Movement)
 		FORCEINLINE EMovementState GetMovementState() const { return MovementState; }
 
@@ -250,6 +266,12 @@ public:
 		bIsHeavyAttack = false;
 		bIsSpecialAttack = false;
 		PrepareAttackTime = 0.0f;
+	}
+
+	UFUNCTION(BlueprintCallable, Category = Movement)
+		void SetWantsToJump(bool bNewWantsToJump)
+	{
+		bWantsToJump = bNewWantsToJump;
 	}
 
 	UFUNCTION(BlueprintCallable, Category = Damage) 
@@ -293,7 +315,8 @@ public:
 			bIsDodging =
 			bIsDodgingZeroInput =
 			bWasHit =
-			bIsBlocking = false;
+			bIsBlocking = 
+			bWantsToJump = false;
 	}
 
 	UFUNCTION(BlueprintCallable, Category = Movement)
@@ -387,6 +410,18 @@ public:
 		return (GetPossessionChance(PlayerLocation) > 0.0f);
 	}
 
+	UFUNCTION(BlueprintCallable, Category = Weapon)
+		FORCEINLINE AInfomorphWeapon* GetCurrentWeapon()
+	{
+		return CurrentWeapon;
+	}
+
+	UFUNCTION(BlueprintCallable, Category = Shield)
+		FORCEINLINE AInfomorphShield* GetCurrentShield()
+	{
+		return CurrentShield;
+	}
+
 
 	UFUNCTION(BlueprintCallable, Category = Stats)
 		void SetCurrentConsciousness(float value)
@@ -422,4 +457,3 @@ public:
 	FORCEINLINE const FCharacterStats& GetCharacterStats() const { return CharacterStats; }
 	FORCEINLINE class USphereComponent* GetInteractionSphere() const { return InteractionSphere; }
 };
-
