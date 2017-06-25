@@ -532,25 +532,57 @@ AActor* AInfomorphPlayerController::GetNextActorInDirection(float MaxDistance, A
 	AActor* HitActor = nullptr;
 	TArray<FHitResult> Hits;
 	bool bWasHit = World->SweepMultiByObjectType(Hits, ControlledPawn->GetActorLocation(), ControlledPawn->GetActorLocation(), FQuat::Identity, ObjectQueryParams, CollisionShape, TraceParams);
+	FVector2D Input2D(InputDirection.X, InputDirection.Y);
 
 	if(bWasHit)
 	{
 		const int32 HitsCount = Hits.Num();
-		float MaxDot = 0.0f;
+		float MaxScore = 0.0f;
+		float ClosestDistance = MaxDistance;
+		float ClosestFromCurrent = MaxDistance;
+
+		TArray<AActor*> ActorsProcessed;
 		for(int32 i = 0; i < HitsCount; ++i)
 		{
 			AActor* Candidate = Hits[i].GetActor();
-			if(Candidate == nullptr)
+			if(Candidate == nullptr || ActorsProcessed.Contains(Candidate))
 			{
 				continue;
 			}
+			ActorsProcessed.Add(Candidate);
 
 			FVector CurrentToCandidate = Candidate->GetActorLocation() - CurrentActor->GetActorLocation();
-			CurrentToCandidate.Normalize();
-			float DotCandidate = FVector::DotProduct(CurrentToCandidate, InputDirection);
-			if(DotCandidate >= MaxDot)
+			FVector2D CurrentToCandidate2D(CurrentToCandidate.X, CurrentToCandidate.Y);
+			CurrentToCandidate2D.Normalize();
+			float DotCandidate = FVector2D::DotProduct(CurrentToCandidate2D, Input2D);
+			if(DotCandidate >= 0.0f)	//Is in the direction
 			{
-				MaxDot = DotCandidate;
+				float Distance = FVector::Distance(ControlledPawn->GetActorLocation(), Candidate->GetActorLocation());
+				if(Distance < ClosestDistance)
+				{
+					ClosestDistance = Distance;
+				}
+				float DistanceFromCurrent = FVector::Distance(CurrentActor->GetActorLocation(), Candidate->GetActorLocation());
+				if(DistanceFromCurrent < ClosestFromCurrent)
+				{
+					ClosestFromCurrent = DistanceFromCurrent;
+				}
+			}
+		}
+		const int32 CandidatesCount = ActorsProcessed.Num();
+		for(int32 i = 0; i < CandidatesCount; ++i)
+		{
+			AActor* Candidate = ActorsProcessed[i];
+			float Distance = FVector::Distance(ControlledPawn->GetActorLocation(), Candidate->GetActorLocation());
+			float DistanceFromCurrent = FVector::Distance(CurrentActor->GetActorLocation(), Candidate->GetActorLocation());
+			
+			float DistanceFromPlayerScore = 1.0f - FMath::Clamp((Distance - ClosestDistance) / MaxDistance, 0.0f, 1.0f);
+			float DistanceFromCurrentScore = 1.0f - FMath::Clamp((DistanceFromCurrent - ClosestFromCurrent) / MaxDistance, 0.0f, 1.0f);
+			float Score = 0.2f * DistanceFromCurrentScore + 0.8f * DistanceFromPlayerScore;
+
+			if(Score >= MaxScore)
+			{
+				MaxScore = Score;
 				HitActor = Candidate;
 			}
 		}
@@ -655,6 +687,7 @@ void AInfomorphPlayerController::BeginPlay()
 	{
 		Skills[i].Initialize();
 	}
+	MovementMultiplier = 1.0f;
 }
 
 void AInfomorphPlayerController::SetupInputComponent()
@@ -724,7 +757,7 @@ void AInfomorphPlayerController::Tick(float DeltaSeconds)
 
 		if(InputComponent != nullptr && PossessedCharacter->IsCameraLocked())
 		{
-			FVector InputDirection(0.0f, InputComponent->GetAxisValue("Turn") + InputComponent->GetAxisValue("TurnRate"), InputComponent->GetAxisValue("LookUp") + InputComponent->GetAxisValue("LookUpRate"));
+			FVector InputDirection(-(InputComponent->GetAxisValue("LookUp") + InputComponent->GetAxisValue("LookUpRate")), InputComponent->GetAxisValue("Turn") + InputComponent->GetAxisValue("TurnRate"), 0.0f);
 			InputDirection = GetControlRotation().RotateVector(InputDirection);
 			if(bRecentlyTriedToSwapCameraTarget)
 			{

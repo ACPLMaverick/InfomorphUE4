@@ -69,12 +69,13 @@ protected:
 	void PerformSkillSelectDown();
 
 	AActor* GetActorInLookDirection(const FVector& EyesLocation, const FVector &Direction, float MaxDistance) const;
-	AActor* GetNextActorInDirection(float MaxDistance, AActor* CurrentActor, const FVector& InputDirection);
 
 	void LookForInteractables(float DeltaSeconds);
 	void TryLockCamera(AActor* CurrentTarget, const FVector& InputDirection = FVector::ZeroVector);
 
 public:
+	AActor* GetNextActorInDirection(float MaxDistance, AActor* CurrentActor, const FVector& InputDirection);
+
 	AInfomorphPlayerController();
 	AInfomorphPlayerController(const FObjectInitializer& ObjectInitializer);
 

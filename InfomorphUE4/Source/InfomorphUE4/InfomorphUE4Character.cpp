@@ -65,9 +65,26 @@ void AInfomorphUE4Character::ProcessCameraLocked(float DeltaSeconds)
 	LockedCameraTimer += DeltaSeconds;
 
 	AInfomorphUE4Character* TargetCharacter = Cast<AInfomorphUE4Character>(CameraTarget);
+	AInfomorphPlayerController* InfomorphPC = Cast<AInfomorphPlayerController>(GetController());
 	if((TargetCharacter != nullptr && TargetCharacter->IsDead()) || IsDead())
 	{
-		UnlockCamera();
+		if(InfomorphPC != nullptr)
+		{
+			AActor* NewTarget = InfomorphPC->GetNextActorInDirection(CharacterStats.SightRange, TargetCharacter, FVector::RightVector);
+			if(NewTarget == nullptr)
+			{
+				NewTarget = InfomorphPC->GetNextActorInDirection(CharacterStats.SightRange, TargetCharacter, -FVector::RightVector);
+			}
+
+			if(NewTarget != nullptr)
+			{
+				LockCameraOnTarget(NewTarget);
+			}
+		}
+		else
+		{
+			UnlockCamera();
+		}
 		return;
 	}
 
@@ -95,7 +112,6 @@ void AInfomorphUE4Character::ProcessCameraLocked(float DeltaSeconds)
 	FRotator LookRotation = Controller->GetControlRotation();
 	LookRotation.Yaw = Direction.Rotation().Yaw;
 
-	AInfomorphPlayerController* InfomorphPC = Cast<AInfomorphPlayerController>(GetController());
 	if(InfomorphPC != nullptr)
 	{
 		float LastLookedTimer = InfomorphPC->GetLastLookedTimer();
