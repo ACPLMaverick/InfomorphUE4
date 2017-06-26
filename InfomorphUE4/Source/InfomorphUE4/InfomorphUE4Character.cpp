@@ -283,6 +283,7 @@ void AInfomorphUE4Character::ProcessFalling(float DeltaSeconds)
 
 void AInfomorphUE4Character::DestroyActor()
 {
+	LogOnScreen("DESTROY MADAFAKA!");
 	Destroy();
 	if(CurrentWeapon != nullptr)
 	{
@@ -579,10 +580,14 @@ float AInfomorphUE4Character::TakeDamage(float DamageAmount, FDamageEvent const&
 	CharacterStats.CurrentEnergy = FMath::Clamp(CharacterStats.CurrentEnergy - EnergyLost, 0.0f, CharacterStats.BaseEnergy);
 	LastActionTime = GetWorld()->GetRealTimeSeconds();
 	CharacterStats.CurrentConsciousness = FMath::Clamp(CharacterStats.CurrentConsciousness - ActualDamage, 0.0f, CharacterStats.BaseConsciousness);
-	bWasHit = ActualDamage > 0.0f && !IsConfused() && !IsShieldBroken();
+	bWasHit = ActualDamage > 0.0f;
 
 	if(bWasHit)
 	{
+		if(IsConfused() || IsShieldBroken())
+		{
+			bWasHit = false;
+		}
 		ResetAttacks();
 		ResetDodging();
 		AInfomorphBaseAIController* InfomorphAIController = Cast<AInfomorphBaseAIController>(GetController());
@@ -608,6 +613,7 @@ void AInfomorphUE4Character::FellOutOfWorld(const UDamageType& DamageType)
 {
 	if(!IsDead())
 	{
+		LogOnScreen("Bye bye, cruel world!");
 		Dedigitalize();
 	}
 	CharacterStats.CurrentConsciousness = 0.0f;
@@ -821,6 +827,7 @@ void AInfomorphUE4Character::Dedigitalize()
 	if(InfomorphPC == nullptr)
 	{
 		//It's AI so call Destroy after dedigitalize
+		LogOnScreen("Hello");
 		GetWorldTimerManager().SetTimer(DedigitalizeTimerHandle, this, &AInfomorphUE4Character::DestroyActor, 3.0f);
 	}
 	else
