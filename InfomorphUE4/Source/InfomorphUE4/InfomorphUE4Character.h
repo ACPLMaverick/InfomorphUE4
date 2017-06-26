@@ -246,6 +246,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = Dodge)
 		FORCEINLINE bool IsDodging() const { return bIsDodging; }
 	UFUNCTION(BlueprintCallable, Category = Dodge)
+		FORCEINLINE FVector GetDodgeDirection() const
+	{
+		return DodgeWorldDirection;
+	}
+	UFUNCTION(BlueprintCallable, Category = Dodge)
 		FORCEINLINE bool IsDodgingZeroInput() const { return bIsDodgingZeroInput; }
 	UFUNCTION(BlueprintCallable, Category = Block)
 		FORCEINLINE bool IsBlocking() const { return bIsBlocking; }
@@ -338,6 +343,7 @@ public:
 	{
 		bIsDodging = false;
 		bIsDodgingZeroInput = false;
+		UnCrouch();
 	}
 
 	UFUNCTION(BlueprintCallable, Category = Block)
@@ -350,14 +356,12 @@ public:
 		void ResetState()
 	{
 		ExitStealthMode();
-		bIsLightAttack =
-			bIsHeavyAttack =
-			bIsSpecialAttack =
-			bIsDodging =
-			bIsDodgingZeroInput =
-			bWasHit =
-			bIsBlocking = 
-			bWantsToJump = false;
+		ResetDodging();
+		ResetBlocking();
+		ResetHit();
+		SetWantsToJump(false);
+		ResetAttacks();
+		ResetAttacks();
 	}
 
 	UFUNCTION(BlueprintCallable, Category = Movement)

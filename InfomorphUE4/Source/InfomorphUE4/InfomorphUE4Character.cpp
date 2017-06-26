@@ -445,7 +445,10 @@ void AInfomorphUE4Character::Tick(float DeltaSeconds)
 
 	if(bIsDodging)
 	{
-		AddMovementInput(DodgeWorldDirection);
+		//AddMovementInput(DodgeWorldDirection);
+		FVector CurrentLocation = GetActorLocation();
+		CurrentLocation += DodgeWorldDirection * CharacterStats.DodgeSpeed * DeltaSeconds;
+		SetActorLocation(CurrentLocation, true);
 	}
 	else
 	{
@@ -547,7 +550,6 @@ float AInfomorphUE4Character::TakeDamage(float DamageAmount, FDamageEvent const&
 			EnergyLost = CharacterStats.CurrentEnergy;
 			EndBlock();
 			bShieldBroken = true;
-			LogOnScreen("Shield broken!");
 		}
 		else
 		{
@@ -637,7 +639,10 @@ void AInfomorphUE4Character::Dodge(const FVector& DodgeDirection)
 
 	if(DodgeDirection.Size() > 0.0f)
 	{
-		DodgeWorldDirection = GetEyesDirection().ToOrientationRotator().RotateVector(DodgeDirection);
+		FRotator YawRotation(0.0f, GetEyesDirection().Rotation().Yaw, 0.0f);
+		DodgeWorldDirection = YawRotation.RotateVector(DodgeDirection);
+		DodgeWorldDirection.Z = 0.0f;
+		DodgeWorldDirection.Normalize();
 	}
 	else
 	{
@@ -646,8 +651,9 @@ void AInfomorphUE4Character::Dodge(const FVector& DodgeDirection)
 		DodgeWorldDirection = -GetActorForwardVector();
 		DodgeWorldDirection.Z = 0.0f;
 	}
+	Crouch();
 	DodgeWorldDirection.Normalize();
-	GetCharacterMovement()->MaxWalkSpeed = CharacterStats.DodgeSpeed;
+	//GetCharacterMovement()->MaxWalkSpeedCrouched = CharacterStats.DodgeSpeed;
 }
 
 void AInfomorphUE4Character::EnterStealthMode()
