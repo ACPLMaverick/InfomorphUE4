@@ -40,8 +40,6 @@ void AInfomorphInteractableElevator::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	LogOnScreen(98786, FString::Printf(TEXT("AtBase: %s, MT: %.4f"), *FString(bIsAtBasePosition ? "True" : "False"), MovingTimer));
-
 	if(bIsMoving)
 	{
 		MovingTimer += DeltaSeconds;
