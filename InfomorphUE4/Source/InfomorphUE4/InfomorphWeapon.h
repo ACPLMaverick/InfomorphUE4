@@ -14,6 +14,8 @@ class INFOMORPHUE4_API AInfomorphWeapon : public AActor
 	GENERATED_BODY()
 
 protected:
+	UPROPERTY(EditAnywhere, Category = Collision)
+		class UCapsuleComponent* CollisionCapsule;
 	UPROPERTY(EditAnywhere, Category = Visual)
 		class UStaticMeshComponent* WeaponMesh;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sounds)
