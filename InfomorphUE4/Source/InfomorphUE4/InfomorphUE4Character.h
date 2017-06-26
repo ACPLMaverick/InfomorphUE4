@@ -154,6 +154,7 @@ protected:
 	bool bWantsToJump;
 
 	bool bShieldBroken;
+	bool bBlockHit;
 
 	bool bWantsToLightAttack;
 	bool bWantsToHeavyAttack;
@@ -249,16 +250,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = Dodge)
 		FORCEINLINE bool IsDodging() const { return bIsDodging; }
 	UFUNCTION(BlueprintCallable, Category = Dodge)
-		FORCEINLINE FVector GetDodgeDirection() const
-	{
-		return DodgeWorldDirection;
-	}
+		FORCEINLINE FVector GetDodgeDirection() const { return DodgeWorldDirection; }
 	UFUNCTION(BlueprintCallable, Category = Dodge)
 		FORCEINLINE bool IsDodgingZeroInput() const { return bIsDodgingZeroInput; }
 	UFUNCTION(BlueprintCallable, Category = Block)
 		FORCEINLINE bool IsBlocking() const { return bIsBlocking; }
 	UFUNCTION(BlueprintCallable, Category = Block)
 		FORCEINLINE bool IsShieldBroken() const { return bShieldBroken; }
+	UFUNCTION(BlueprintCallable, Category = Block)
+		FORCEINLINE bool IsBlockHit() const { return bBlockHit; }
 	UFUNCTION(BlueprintCallable, Category = Info)
 		FORCEINLINE bool IsDead() const { return CharacterStats.CurrentConsciousness <= 0.0f; }
 	UFUNCTION(BlueprintCallable, Category = Info)
@@ -288,6 +288,13 @@ public:
 		void ResetShieldBroken()
 	{
 		bShieldBroken = false;
+	}
+
+	UFUNCTION(BlueprintCallable, Category = Block)
+		void ResetBlockHit()
+	{
+		bBlockHit = false;
+		Confuse(1.0f);
 	}
 
 	UFUNCTION(BlueprintCallable, Category = Attack) 
@@ -367,6 +374,8 @@ public:
 		SetWantsToJump(false);
 		ResetAttacks();
 		ResetAttacks();
+		ResetShieldBroken();
+		bBlockHit = false;
 	}
 
 	UFUNCTION(BlueprintCallable, Category = Movement)
