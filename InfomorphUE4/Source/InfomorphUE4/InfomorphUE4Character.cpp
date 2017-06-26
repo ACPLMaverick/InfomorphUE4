@@ -265,6 +265,7 @@ void AInfomorphUE4Character::ProcessFalling(float DeltaSeconds)
 			bIsFalling = true;
 		}
 	}
+	bIsInAir = VelocityZ != 0.0f;
 
 	if(bIsFalling)
 	{
