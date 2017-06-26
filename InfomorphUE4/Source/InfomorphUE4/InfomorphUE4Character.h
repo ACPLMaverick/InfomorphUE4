@@ -162,6 +162,7 @@ protected:
 	bool bAttackQueueEnabled;
 
 	bool bIsFalling;
+	bool bIsInAir;
 	float FallingTimer;
 
 	float CombatModeCheckTimer;
@@ -266,6 +267,8 @@ public:
 		FORCEINLINE bool WantsToJump() const { return bWantsToJump; }
 	UFUNCTION(BlueprintCallable, Category = Movement)
 		FORCEINLINE bool IsFalling() const { return bIsFalling; }
+	UFUNCTION(BlueprintCallable, Category = Movement)
+		FORCEINLINE bool IsInAir() const { return bIsInAir; }
 	UFUNCTION(BlueprintCallable, Category = Movement)
 		FORCEINLINE bool IsFallingFromHigh() const { return FallingTimer >= 1.1f; }
 	UFUNCTION(BlueprintCallable, Category = Movement)
