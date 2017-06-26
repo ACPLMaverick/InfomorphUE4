@@ -80,6 +80,10 @@ void AInfomorphUE4Character::ProcessCameraLocked(float DeltaSeconds)
 			{
 				LockCameraOnTarget(NewTarget);
 			}
+			else
+			{
+				UnlockCamera();
+			}
 		}
 		else
 		{
