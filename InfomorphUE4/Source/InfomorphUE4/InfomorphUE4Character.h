@@ -111,6 +111,8 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sounds)
 		class USoundBase* HitSound;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sounds)
+		class USoundBase* SpawnSound;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sounds)
 		class USoundBase* DeathSound;
 
 	AInfomorphWeapon* CurrentWeapon;

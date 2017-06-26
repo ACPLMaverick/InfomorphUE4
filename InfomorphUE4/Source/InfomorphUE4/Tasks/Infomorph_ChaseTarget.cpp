@@ -11,7 +11,6 @@
 UInfomorph_ChaseTarget::UInfomorph_ChaseTarget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	bNotifyTick = true;
-	bGenerateChaseOffset = true;
 }
 
 void UInfomorph_ChaseTarget::OnGameplayTaskActivated(UGameplayTask& Task)
@@ -44,13 +43,7 @@ EBTNodeResult::Type UInfomorph_ChaseTarget::ExecuteTask(UBehaviorTreeComponent& 
 		AICharacter->SetMovementState(EMovementState::TargetLocked);
 	}
 
-	if(bGenerateChaseOffset)
-	{
-		FVector ChaseOffset = FRotator(0.0f, FMath::FRandRange(-80.0f, 80.0f), 0.0f).RotateVector(TargetActor->GetActorForwardVector()) * AcceptableRadius * 0.8f;
-		OwnerComp.GetBlackboardComponent()->SetValueAsVector(ChaseOffsetKey.SelectedKeyName, ChaseOffset);
-	}
-
-	EBTNodeResult::Type NodeResult = PerformMove(InfomorphAIController, TargetActor, OwnerComp.GetBlackboardComponent()->GetValueAsVector(ChaseOffsetKey.SelectedKeyName));
+	EBTNodeResult::Type NodeResult = PerformMove(InfomorphAIController, TargetActor);
 
 	return NodeResult;
 }
@@ -76,7 +69,7 @@ void UInfomorph_ChaseTarget::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* 
 		FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
 		return;
 	}
-	EBTNodeResult::Type NodeResult = PerformMove(InfomorphAIController, TargetActor, OwnerComp.GetBlackboardComponent()->GetValueAsVector(ChaseOffsetKey.SelectedKeyName));
+	EBTNodeResult::Type NodeResult = PerformMove(InfomorphAIController, TargetActor);
 	
 	if(NodeResult != EBTNodeResult::InProgress)
 	{
@@ -84,27 +77,9 @@ void UInfomorph_ChaseTarget::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* 
 	}
 }
 
-EBTNodeResult::Type UInfomorph_ChaseTarget::PerformMove(AInfomorphBaseAIController* InfomorphAIController, AActor* Target, const FVector& ChaseOffset)
+EBTNodeResult::Type UInfomorph_ChaseTarget::PerformMove(AInfomorphBaseAIController* InfomorphAIController, AActor* Target)
 {
-	AInfomorphUE4Character* AICharacter = Cast<AInfomorphUE4Character>(InfomorphAIController->GetPawn());
-	if(AICharacter == nullptr || AICharacter->IsConfused() || Target == nullptr)
-	{
-		return EBTNodeResult::Failed;
-	}
+	EPathFollowingRequestResult::Type MoveResult =  InfomorphAIController->MoveToActor(Target, AcceptableRadius, false, true, false);
 
-	FVector AICharacterLocation = AICharacter->GetActorLocation();
-	FVector TargetLocation = Target->GetActorLocation();
-	float Distance = FVector::Dist(AICharacterLocation, TargetLocation);
-	if(Distance <= AcceptableRadius)
-	{
-		return EBTNodeResult::Succeeded;
-	}
-
-	FVector Direction = TargetLocation - AICharacterLocation;
-	Direction.Z = 0.0f;
-	Direction.Normalize();
-
-	AICharacter->AddMovementInput(Direction);
-
-	return EBTNodeResult::InProgress;
+	return MoveResult == EPathFollowingRequestResult::AlreadyAtGoal ? EBTNodeResult::Succeeded : EBTNodeResult::InProgress;
 }

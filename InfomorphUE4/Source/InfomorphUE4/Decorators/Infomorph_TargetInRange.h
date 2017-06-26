@@ -25,7 +25,6 @@ private:
 	virtual bool CalculateRawConditionValue(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) const override;
 	virtual FString GetStaticDescription() const override;
 	
-
 protected:
 	bool EvaluateOnBlackboard(const UBlackboardComponent& Blackboard) const;
 
