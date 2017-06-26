@@ -550,7 +550,6 @@ float AInfomorphUE4Character::TakeDamage(float DamageAmount, FDamageEvent const&
 			EnergyLost = CharacterStats.CurrentEnergy;
 			EndBlock();
 			bShieldBroken = true;
-			LogOnScreen("Shield broken!");
 		}
 		else
 		{
