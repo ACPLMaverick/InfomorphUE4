@@ -338,6 +338,7 @@ public:
 	{
 		bIsDodging = false;
 		bIsDodgingZeroInput = false;
+		UnCrouch();
 	}
 
 	UFUNCTION(BlueprintCallable, Category = Block)
@@ -350,14 +351,12 @@ public:
 		void ResetState()
 	{
 		ExitStealthMode();
-		bIsLightAttack =
-			bIsHeavyAttack =
-			bIsSpecialAttack =
-			bIsDodging =
-			bIsDodgingZeroInput =
-			bWasHit =
-			bIsBlocking = 
-			bWantsToJump = false;
+		ResetDodging();
+		ResetBlocking();
+		ResetHit();
+		SetWantsToJump(false);
+		ResetAttacks();
+		ResetAttacks();
 	}
 
 	UFUNCTION(BlueprintCallable, Category = Movement)

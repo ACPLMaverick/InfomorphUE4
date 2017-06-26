@@ -646,8 +646,9 @@ void AInfomorphUE4Character::Dodge(const FVector& DodgeDirection)
 		DodgeWorldDirection = -GetActorForwardVector();
 		DodgeWorldDirection.Z = 0.0f;
 	}
+	Crouch();
 	DodgeWorldDirection.Normalize();
-	GetCharacterMovement()->MaxWalkSpeed = CharacterStats.DodgeSpeed;
+	GetCharacterMovement()->MaxWalkSpeedCrouched = CharacterStats.DodgeSpeed;
 }
 
 void AInfomorphUE4Character::EnterStealthMode()
