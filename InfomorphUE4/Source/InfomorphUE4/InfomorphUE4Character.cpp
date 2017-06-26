@@ -556,7 +556,13 @@ float AInfomorphUE4Character::TakeDamage(float DamageAmount, FDamageEvent const&
 		{
 			if(Predator != nullptr)
 			{
-				Predator->Confuse(1.0f);
+				Predator->bIsLightAttack = false;
+				Predator->bIsHeavyAttack = false;
+				Predator->bIsSpecialAttack = false;
+				Predator->bWantsToLightAttack = false;
+				Predator->bWantsToHeavyAttack = false;
+				Predator->bWantsToSpecialAttack = false;
+				Predator->bBlockHit = true;
 			}
 			if(CurrentShield != nullptr)
 			{
@@ -856,6 +862,12 @@ void AInfomorphUE4Character::Confuse(float ConfusionTime, float Multiplier)
 {
 	CharacterStats.bIsConfused = true;
 	GetWorldTimerManager().SetTimer(ConfusionTimerHandle, this, &AInfomorphUE4Character::ConfusionEnd, ConfusionTime * Multiplier);
+
+	AInfomorphBaseAIController* InfomorphAIController = Cast<AInfomorphBaseAIController>(GetController());
+	if(InfomorphAIController != nullptr)
+	{
+		InfomorphAIController->PauseBehaviorTree("Confusion");
+	}
 }
 
 void AInfomorphUE4Character::ConfusionEnd()
