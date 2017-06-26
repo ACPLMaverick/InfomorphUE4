@@ -274,9 +274,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = Movement)
 		FORCEINLINE EMovementState GetMovementState() const { return MovementState; }
 
+	FORCEINLINE bool HasInteractionTarget() const { return InteractionTarget != nullptr; }
+
 	FORCEINLINE bool IsActionsDisabled() const
 	{
-		return bShieldBroken || bIsDodging || bWasHit || CharacterStats.bIsConfused || IsDead() || InteractionTarget != nullptr;
+		return bShieldBroken || bIsDodging || bWasHit || CharacterStats.bIsConfused || IsDead();
 	}
 
 	FORCEINLINE bool IsAttacking() const
