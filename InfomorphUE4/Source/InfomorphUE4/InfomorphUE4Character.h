@@ -246,6 +246,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = Dodge)
 		FORCEINLINE bool IsDodging() const { return bIsDodging; }
 	UFUNCTION(BlueprintCallable, Category = Dodge)
+		FORCEINLINE FVector GetDodgeDirection() const
+	{
+		return DodgeWorldDirection;
+	}
+	UFUNCTION(BlueprintCallable, Category = Dodge)
 		FORCEINLINE bool IsDodgingZeroInput() const { return bIsDodgingZeroInput; }
 	UFUNCTION(BlueprintCallable, Category = Block)
 		FORCEINLINE bool IsBlocking() const { return bIsBlocking; }
