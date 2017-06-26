@@ -80,6 +80,10 @@ void AInfomorphUE4Character::ProcessCameraLocked(float DeltaSeconds)
 			{
 				LockCameraOnTarget(NewTarget);
 			}
+			else
+			{
+				UnlockCamera();
+			}
 		}
 		else
 		{
@@ -268,6 +272,11 @@ void AInfomorphUE4Character::ProcessFalling(float DeltaSeconds)
 		ResetDodging();
 		ResetAttacks();
 		FallingTimer += DeltaSeconds;
+		AInfomorphPlayerController* InfomorphPlayerController = Cast<AInfomorphPlayerController>(GetController());
+		if(InfomorphPlayerController != nullptr)
+		{
+			InfomorphPlayerController->SetMovementMultiplier(0.0f);
+		}
 	}
 }
 

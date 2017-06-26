@@ -5,6 +5,7 @@
 #include "InfomorphUE4Character.h"
 #include "InfomorphUE4.h"
 #include "Perception/AISense_Damage.h"
+#include "Components/CapsuleComponent.h"
 
 AInfomorphWeapon::AInfomorphWeapon(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -17,29 +18,28 @@ AInfomorphWeapon::AInfomorphWeapon(const FObjectInitializer& ObjectInitializer) 
 
 	WeaponMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WeaponMesh"));
 	WeaponMesh->SetupAttachment(RootComponent);
-	WeaponMesh->bGenerateOverlapEvents = true;
-	WeaponMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Overlap);
-	WeaponMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+	WeaponMesh->bGenerateOverlapEvents = false;
+	WeaponMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+
+	CollisionCapsule = CreateDefaultSubobject<UCapsuleComponent>(TEXT("CollisionCapsule"));
+	CollisionCapsule->SetupAttachment(WeaponMesh);
+	CollisionCapsule->bGenerateOverlapEvents = true;
+	WeaponMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	WeaponMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 }
 
 void AInfomorphWeapon::BeginPlay()
 {
 	Super::BeginPlay();
 
-	WeaponMesh->OnComponentBeginOverlap.AddDynamic(this, &AInfomorphWeapon::OnWeaponBeginOverlap);
-	
+	CollisionCapsule->OnComponentBeginOverlap.AddDynamic(this, &AInfomorphWeapon::OnWeaponBeginOverlap);
+
 	DisableCollision();
 }
 
 void AInfomorphWeapon::OnWeaponBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if(OverlappedComponent != WeaponMesh)
-	{
-		return;
-	}
-
-	AInfomorphUE4Character* OtherCharacter = Cast<AInfomorphUE4Character>(OtherActor);
-	if(OtherCharacter == nullptr)
+	if(OverlappedComponent != CollisionCapsule)
 	{
 		return;
 	}
@@ -49,9 +49,15 @@ void AInfomorphWeapon::OnWeaponBeginOverlap(UPrimitiveComponent* OverlappedCompo
 	{
 		return;
 	}
-	
+
 	AInfomorphUE4Character* ParentCharacter = Cast<AInfomorphUE4Character>(ParentComponent->GetOwner());
 	if(ParentCharacter == nullptr || ParentCharacter == OtherActor)
+	{
+		return;
+	}
+
+	AInfomorphUE4Character* OtherCharacter = Cast<AInfomorphUE4Character>(OtherActor);
+	if(OtherCharacter == nullptr)
 	{
 		return;
 	}
@@ -83,14 +89,12 @@ void AInfomorphWeapon::Tick(float DeltaTime)
 
 void AInfomorphWeapon::EnableCollision()
 {
-	WeaponMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-	WeaponMesh->bGenerateOverlapEvents = true;
+	CollisionCapsule->bGenerateOverlapEvents = true;
 	IgnoredActors.Reset(IgnoredActors.Num());
 }
 
 void AInfomorphWeapon::DisableCollision()
 {
-	WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	WeaponMesh->bGenerateOverlapEvents = false;
+	CollisionCapsule->bGenerateOverlapEvents = false;
 }
 
