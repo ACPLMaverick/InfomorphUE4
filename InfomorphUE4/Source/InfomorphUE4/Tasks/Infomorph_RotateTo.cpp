@@ -91,6 +91,7 @@ EBTNodeResult::Type UInfomorph_RotateTo::PerformRotate(AInfomorphUE4Character* C
 	CurrentRotation.Yaw = FMath::FInterpTo(CurrentRotation.Yaw, TargetYaw, DeltaSeconds, RotateSpeed);;
 	ControlledActor->SetActorRotation(CurrentRotation);
 
+
 	if(FMath::Abs(TargetYaw - CurrentRotation.Yaw) < AcceptableAngle)
 	{
 		return EBTNodeResult::Succeeded;

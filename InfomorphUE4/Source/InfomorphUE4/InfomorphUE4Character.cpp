@@ -2,7 +2,6 @@
 
 #include "InfomorphUE4Character.h"
 #include "InfomorphUE4.h"
-#include "InfomorphPlayerController.h"
 #include "InfomorphUE4GameMode.h"
 #include "Kismet/HeadMountedDisplayFunctionLibrary.h"
 #include "Camera/CameraComponent.h"
@@ -456,7 +455,12 @@ void AInfomorphUE4Character::Tick(float DeltaSeconds)
 	{
 		GetCharacterMovement()->bOrientRotationToMovement = !IsCameraLocked();
 
-		GetCharacterMovement()->MaxWalkSpeed = CharacterStats.MaxSpeed * (IsInStealthMode() || IsBlocking() || MovementState == EMovementState::Patrol ? 0.5f : 1.0f);
+		float Speed = CharacterStats.MaxSpeed;
+		if(MovementState == EMovementState::Patrol)
+		{
+			Speed = CharacterStats.PatrolSpeed;
+		}
+		GetCharacterMovement()->MaxWalkSpeed = Speed * (IsInStealthMode() || IsBlocking() ? 0.5f : 1.0f);
 	}
 
 	if(PrepareAttackTime > 0.0f)
@@ -527,6 +531,13 @@ float AInfomorphUE4Character::TakeDamage(float DamageAmount, FDamageEvent const&
 		return 0.0f;
 	}
 
+	if(IsDodging() || IsDodgingZeroInput())
+	{
+		return 0.0f;
+	}
+
+	AInfomorphPlayerController* InfomorphPC = Cast<AInfomorphPlayerController>(GetController());
+
 	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
 	if(ActualDamage <= 0.0f)
@@ -543,7 +554,7 @@ float AInfomorphUE4Character::TakeDamage(float DamageAmount, FDamageEvent const&
 		FVector Forward = GetActorForwardVector();
 		Dot = FVector::DotProduct(PredatorForward, Forward);
 	}
-	if(bIsBlocking && Dot < -0.5f)
+	if(bIsBlocking && Dot < -0.5f && !bShieldBroken)
 	{
 		EnergyLost = CharacterStats.BlockEnergyCost * ActualDamage;
 		ActualDamage = 0.0f;
@@ -552,6 +563,10 @@ float AInfomorphUE4Character::TakeDamage(float DamageAmount, FDamageEvent const&
 			EnergyLost = CharacterStats.CurrentEnergy;
 			EndBlock();
 			bShieldBroken = true;
+			if(InfomorphPC != nullptr)
+			{
+				InfomorphPC->PlayFeedback(HitForceFeedback);
+			}
 		}
 		else
 		{
@@ -564,6 +579,21 @@ float AInfomorphUE4Character::TakeDamage(float DamageAmount, FDamageEvent const&
 				Predator->bWantsToHeavyAttack = false;
 				Predator->bWantsToSpecialAttack = false;
 				Predator->bBlockHit = true;
+
+				AInfomorphPlayerController* PlayerController = Cast<AInfomorphPlayerController>(Predator->GetController());
+				if(PlayerController != nullptr)
+				{
+					PlayerController->SetMovementMultiplier(0.0f);
+					PlayerController->PlayFeedback(HitForceFeedback);
+				}
+				else
+				{
+					AInfomorphBaseAIController* AIController = Cast<AInfomorphBaseAIController>(Predator->GetController());
+					if(AIController != nullptr)
+					{
+						AIController->PauseBehaviorTree("BlockHit");
+					}
+				}
 			}
 			if(CurrentShield != nullptr)
 			{
@@ -572,7 +602,7 @@ float AInfomorphUE4Character::TakeDamage(float DamageAmount, FDamageEvent const&
 		}
 	}
 
-	if(GetController()->IsA<AInfomorphPlayerController>())
+	if(InfomorphPC != nullptr)
 	{
 		ActualDamage *= (1.0f - CharacterStats.ConsciousnessArmorWhenPossessed);
 	}
@@ -584,10 +614,16 @@ float AInfomorphUE4Character::TakeDamage(float DamageAmount, FDamageEvent const&
 
 	if(bWasHit)
 	{
+		if(InfomorphPC != nullptr)
+		{
+			InfomorphPC->PlayFeedback(HitForceFeedback);
+		}
+		
 		if(IsConfused() || IsShieldBroken())
 		{
 			bWasHit = false;
 		}
+		
 		ResetAttacks();
 		ResetDodging();
 		AInfomorphBaseAIController* InfomorphAIController = Cast<AInfomorphBaseAIController>(GetController());
@@ -645,6 +681,8 @@ void AInfomorphUE4Character::Dodge(const FVector& DodgeDirection)
 	{
 		EndBlock();
 	}
+
+	bIsLightAttack = bIsHeavyAttack = bIsSpecialAttack = bWantsToHeavyAttack = bWantsToLightAttack = bWantsToSpecialAttack = false;
 
 	CharacterStats.CurrentEnergy -= CharacterStats.DodgeEnergyCost;
 	LastActionTime = GetWorld()->GetRealTimeSeconds();
@@ -851,18 +889,7 @@ float AInfomorphUE4Character::GetPossessionChance(const FVector& PlayerLocation)
 		return 1.0f;
 	}
 
-	FVector ActorForward = GetActorForwardVector();
-	FVector ActorToPlayer = PlayerLocation - GetActorLocation();
-	ActorToPlayer.Normalize();
-	float DotProduct = FVector::DotProduct(ActorForward, ActorToPlayer);
-	if(DotProduct > 0.5f)
-	{
-		return 0.0f;
-	}
-
-	float PercentageInversed = 1.0f - ConsciousnessPercentage;
-	float Chance = FMath::Clamp((-2.0f * DotProduct + 1.0f) / 3.0f, 0.0f, 1.0f);
-	return Chance * PercentageInversed;
+	return 0.0f;
 }
 
 void AInfomorphUE4Character::Confuse(float ConfusionTime, float Multiplier)
