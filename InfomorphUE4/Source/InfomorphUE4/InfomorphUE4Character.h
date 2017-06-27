@@ -7,6 +7,7 @@
 #include "InfomorphWeapon.h"
 #include "InfomorphShield.h"
 #include "InfomorphBaseAIController.h"
+#include "InfomorphPlayerController.h"
 #include "InfomorphUE4Character.generated.h"
 
 UENUM(BlueprintType)
@@ -69,6 +70,8 @@ public:
 		bool bCanEverDodge;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Movement)
 		float MaxSpeed;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Movement)
+		float PatrolSpeed;
 
 	float CurrentConsciousness;
 	float CurrentEnergy;
@@ -114,6 +117,9 @@ protected:
 		class USoundBase* SpawnSound;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sounds)
 		class USoundBase* DeathSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Effects)
+		class UForceFeedbackEffect* HitForceFeedback;
 
 	AInfomorphWeapon* CurrentWeapon;
 	AInfomorphShield* CurrentShield;
@@ -296,7 +302,20 @@ public:
 		void ResetBlockHit()
 	{
 		bBlockHit = false;
-		Confuse(1.0f);
+
+		AInfomorphPlayerController* PlayerController = Cast<AInfomorphPlayerController>(GetController());
+		if(PlayerController != nullptr)
+		{
+			PlayerController->SetMovementMultiplier(1.0f);
+		}
+		else
+		{
+			AInfomorphBaseAIController* AIController = Cast<AInfomorphBaseAIController>(GetController());
+			if(AIController != nullptr)
+			{
+				AIController->ResumeBehaviorTree();
+			}
+		}
 	}
 
 	UFUNCTION(BlueprintCallable, Category = Attack) 
