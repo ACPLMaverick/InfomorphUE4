@@ -37,6 +37,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stats)
 		float ConsciousnessPercentPossessable;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stats)
+		float MinConsciousnessLostToPlayAnim;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stats)
 		float DodgeSpeed;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Confusion)
 		float ConfusionPossessedTime;
@@ -68,6 +70,10 @@ public:
 		float SpecialAttackCooldown;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Abilities)
 		bool bCanEverDodge;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Abilities)
+		bool bCanEverBlock;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Abilities)
+		bool bBreaksBlockEveryHit;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Movement)
 		float MaxSpeed;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Movement)
@@ -101,10 +107,14 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = Weapon)
 		TSubclassOf<AInfomorphWeapon> WeaponClass;
+	UPROPERTY(EditAnywhere, Category = Weapon)
+		TSubclassOf<AInfomorphWeapon> SecondaryWeaponClass;
 	UPROPERTY(EditAnywhere, Category = Shield)
 		TSubclassOf<AInfomorphShield> ShieldClass;
 	UPROPERTY(EditAnywhere, Category = Weapon)
 		FName WeaponSocketName;
+	UPROPERTY(EditAnywhere, Category = Weapon)
+		FName SecondaryWeaponSocketName;
 	UPROPERTY(EditAnywhere, Category = Shield)
 		FName ShieldSocketName;
 
@@ -122,6 +132,7 @@ protected:
 		class UForceFeedbackEffect* HitForceFeedback;
 
 	AInfomorphWeapon* CurrentWeapon;
+	AInfomorphWeapon* CurrentSecondaryWeapon;
 	AInfomorphShield* CurrentShield;
 
 	AActor* CameraTarget;
@@ -218,6 +229,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = Possession)
 		float GetPossessionChance(const FVector& PlayerLocation);
+
+	UFUNCTION(BlueprintCallable, Category = Movement)
+		void PerformJump();
 
 	void Confuse(float ConfusionTime, float Multiplier = 1.0f);
 	void ConfusionEnd();
@@ -368,7 +382,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = Attack)
 		void PlayWeaponSound()
 	{
-		CurrentWeapon->PlayAttackSound();
+		if(CurrentWeapon != nullptr)
+		{
+			CurrentWeapon->PlayAttackSound();
+		}
+		if(CurrentSecondaryWeapon != nullptr)
+		{
+			CurrentSecondaryWeapon->PlayAttackSound();
+		}
 	}
 
 	UFUNCTION(BlueprintCallable, Category = Dodge) 
@@ -494,6 +515,12 @@ public:
 		FORCEINLINE AInfomorphWeapon* GetCurrentWeapon()
 	{
 		return CurrentWeapon;
+	}
+
+	UFUNCTION(BlueprintCallable, Category = Weapon)
+		FORCEINLINE AInfomorphWeapon* GetCurrentSecondaryWeapon()
+	{
+		return CurrentSecondaryWeapon;
 	}
 
 	UFUNCTION(BlueprintCallable, Category = Shield)

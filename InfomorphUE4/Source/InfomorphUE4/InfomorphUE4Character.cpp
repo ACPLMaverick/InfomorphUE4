@@ -65,7 +65,7 @@ void AInfomorphUE4Character::ProcessCameraLocked(float DeltaSeconds)
 
 	AInfomorphUE4Character* TargetCharacter = Cast<AInfomorphUE4Character>(CameraTarget);
 	AInfomorphPlayerController* InfomorphPC = Cast<AInfomorphPlayerController>(GetController());
-	if((TargetCharacter != nullptr && TargetCharacter->IsDead()) || IsDead())
+	if((TargetCharacter != nullptr && TargetCharacter->IsDead()))
 	{
 		if(InfomorphPC != nullptr)
 		{
@@ -90,10 +90,15 @@ void AInfomorphUE4Character::ProcessCameraLocked(float DeltaSeconds)
 		}
 		return;
 	}
+	if(IsDead())
+	{
+		UnlockCamera();
+		return;
+	}
 
 	FVector Direction = CameraTarget->GetActorLocation() - GetEyesLocation();
 	
-	if(Direction.Size() > CharacterStats.SightRange)
+	if(Direction.Size() > 1.5f * CharacterStats.SightRange)
 	{
 		UnlockCamera();
 		return;
@@ -282,12 +287,16 @@ void AInfomorphUE4Character::ProcessFalling(float DeltaSeconds)
 
 void AInfomorphUE4Character::DestroyActor()
 {
-	LogOnScreen("DESTROY MADAFAKA!");
 	Destroy();
 	if(CurrentWeapon != nullptr)
 	{
 		CurrentWeapon->Destroy();
 		CurrentWeapon = nullptr;
+	}
+	if(CurrentSecondaryWeapon != nullptr)
+	{
+		CurrentSecondaryWeapon->Destroy();
+		CurrentSecondaryWeapon = nullptr;
 	}
 	if(CurrentShield != nullptr)
 	{
@@ -307,15 +316,22 @@ bool AInfomorphUE4Character::IsTargetVisible(const FVector& Direction) const
 	static const FName TraceTag = TEXT("TargetVisibleTest");
 
 	FCollisionObjectQueryParams ObjectQueryParams;
-	ObjectQueryParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldStatic);
-	ObjectQueryParams.AddObjectTypesToQuery(ECollisionChannel::ECC_Pawn);
+	ObjectQueryParams.AddObjectTypesToQuery(ECollisionChannel::ECC_Visibility);
 	FCollisionQueryParams TraceParams(TraceTag, true, this);
+	TraceParams.AddIgnoredActor(CurrentWeapon);
+	TraceParams.AddIgnoredActor(CurrentSecondaryWeapon);
+	TraceParams.AddIgnoredActor(CurrentShield);
 
 	AActor* HitActor = nullptr;
 	FHitResult Hit;
 	bool bWasHit = World->LineTraceSingleByObjectType(Hit, GetEyesLocation(), GetEyesLocation() + Direction * CharacterStats.SightRange, ObjectQueryParams, TraceParams);
 
-	return Hit.GetActor() != nullptr && Hit.GetActor()->IsA<AInfomorphUE4Character>();
+	if(bWasHit)
+	{
+		LogOnScreen(9876543, Hit.GetActor() != nullptr ? Hit.GetActor()->GetName() : "nothing?");
+	}
+
+	return !bWasHit;
 }
 
 AInfomorphUE4Character::AInfomorphUE4Character()
@@ -402,6 +418,13 @@ void AInfomorphUE4Character::BeginPlay()
 		CurrentWeapon->AttachToComponent((USceneComponent*)GetMesh(), AttachmentRules, WeaponSocketName);
 		CurrentWeapon->SetActorRelativeLocation(FVector::ZeroVector);
 		CurrentWeapon->SetActorRelativeRotation(FQuat::Identity);
+	}
+	CurrentSecondaryWeapon = GetWorld()->SpawnActor<AInfomorphWeapon>(SecondaryWeaponClass.Get());
+	if(CurrentSecondaryWeapon != nullptr)
+	{
+		CurrentSecondaryWeapon->AttachToComponent((USceneComponent*)GetMesh(), AttachmentRules, SecondaryWeaponSocketName);
+		CurrentSecondaryWeapon->SetActorRelativeLocation(FVector::ZeroVector);
+		CurrentSecondaryWeapon->SetActorRelativeRotation(FQuat::Identity);
 	}
 
 	CurrentShield = GetWorld()->SpawnActor<AInfomorphShield>(ShieldClass.Get());
@@ -554,11 +577,19 @@ float AInfomorphUE4Character::TakeDamage(float DamageAmount, FDamageEvent const&
 		FVector Forward = GetActorForwardVector();
 		Dot = FVector::DotProduct(PredatorForward, Forward);
 	}
-	if(bIsBlocking && Dot < -0.5f && !bShieldBroken)
+	bool bCanBlock = bIsBlocking && !IsAttacking() && !bShieldBroken && Dot < -0.5f;
+	if(bCanBlock)
 	{
-		EnergyLost = CharacterStats.BlockEnergyCost * ActualDamage;
+		if(Predator != nullptr && Predator->CharacterStats.bBreaksBlockEveryHit)
+		{
+			EnergyLost = CharacterStats.CurrentEnergy + 10.0f;
+		}
+		else
+		{
+			EnergyLost = CharacterStats.BlockEnergyCost * ActualDamage;
+		}
 		ActualDamage = 0.0f;
-		if(EnergyLost > CharacterStats.CurrentEnergy)
+		if(EnergyLost >= CharacterStats.CurrentEnergy)
 		{
 			EnergyLost = CharacterStats.CurrentEnergy;
 			EndBlock();
@@ -619,7 +650,7 @@ float AInfomorphUE4Character::TakeDamage(float DamageAmount, FDamageEvent const&
 			InfomorphPC->PlayFeedback(HitForceFeedback);
 		}
 		
-		if(IsConfused() || IsShieldBroken())
+		if(IsConfused() || IsShieldBroken() || ActualDamage < CharacterStats.MinConsciousnessLostToPlayAnim)
 		{
 			bWasHit = false;
 		}
@@ -649,7 +680,6 @@ void AInfomorphUE4Character::FellOutOfWorld(const UDamageType& DamageType)
 {
 	if(!IsDead())
 	{
-		LogOnScreen("Bye bye, cruel world!");
 		Dedigitalize();
 	}
 	CharacterStats.CurrentConsciousness = 0.0f;
@@ -657,7 +687,10 @@ void AInfomorphUE4Character::FellOutOfWorld(const UDamageType& DamageType)
 
 void AInfomorphUE4Character::StartBlock()
 {
-	bIsBlocking = true;
+	if(CharacterStats.bCanEverBlock)
+	{
+		bIsBlocking = true;
+	}
 }
 
 void AInfomorphUE4Character::EndBlock()
@@ -753,6 +786,10 @@ void AInfomorphUE4Character::Attack()
 	{
 		CurrentWeapon->SetDamage(CharacterStats.LightAttackDamage);
 	}
+	if(CurrentSecondaryWeapon != nullptr)
+	{
+		CurrentSecondaryWeapon->SetDamage(CharacterStats.LightAttackDamage);
+	}
 }
 
 void AInfomorphUE4Character::HeavyAttack()
@@ -778,6 +815,10 @@ void AInfomorphUE4Character::HeavyAttack()
 	if(CurrentWeapon != nullptr)
 	{
 		CurrentWeapon->SetDamage(CharacterStats.HeavyAttackDamage);
+	}
+	if(CurrentSecondaryWeapon != nullptr)
+	{
+		CurrentSecondaryWeapon->SetDamage(CharacterStats.HeavyAttackDamage);
 	}
 }
 
@@ -811,6 +852,10 @@ void AInfomorphUE4Character::SpecialAttack()
 	if(CurrentWeapon != nullptr)
 	{
 		CurrentWeapon->SetDamage(CharacterStats.SpecialAttackDamage);
+	}
+	if(CurrentSecondaryWeapon != nullptr)
+	{
+		CurrentSecondaryWeapon->SetDamage(CharacterStats.SpecialAttackDamage);
 	}
 }
 
@@ -865,7 +910,6 @@ void AInfomorphUE4Character::Dedigitalize()
 	if(InfomorphPC == nullptr)
 	{
 		//It's AI so call Destroy after dedigitalize
-		LogOnScreen("Hello");
 		GetWorldTimerManager().SetTimer(DedigitalizeTimerHandle, this, &AInfomorphUE4Character::DestroyActor, 3.0f);
 	}
 	else
@@ -890,6 +934,18 @@ float AInfomorphUE4Character::GetPossessionChance(const FVector& PlayerLocation)
 	}
 
 	return 0.0f;
+}
+
+void AInfomorphUE4Character::PerformJump()
+{
+	AInfomorphPlayerController* InfomorphPC = Cast<AInfomorphPlayerController>(GetController());
+	if(InfomorphPC == nullptr)
+	{
+		return;
+	}
+
+	GetCharacterMovement()->Velocity = InfomorphPC->GetVelocityBeforeJump();
+	Jump();
 }
 
 void AInfomorphUE4Character::Confuse(float ConfusionTime, float Multiplier)
@@ -959,6 +1015,10 @@ void AInfomorphUE4Character::EnableWeaponCollision()
 	{
 		CurrentWeapon->EnableCollision();
 	}
+	if(CurrentSecondaryWeapon != nullptr)
+	{
+		CurrentSecondaryWeapon->EnableCollision();
+	}
 }
 
 void AInfomorphUE4Character::DisableWeaponCollision()
@@ -966,6 +1026,10 @@ void AInfomorphUE4Character::DisableWeaponCollision()
 	if(CurrentWeapon != nullptr)
 	{
 		CurrentWeapon->DisableCollision();
+	}
+	if(CurrentSecondaryWeapon != nullptr)
+	{
+		CurrentSecondaryWeapon->DisableCollision();
 	}
 }
 

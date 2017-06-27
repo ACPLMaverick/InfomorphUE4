@@ -31,6 +31,7 @@ protected:
 
 	AInfomorphInteractable* CurrentInteractable;
 
+	FVector VelocityBeforeJump;
 	float LastLookedTimer;
 	float LastMovedTimer;
 
@@ -93,6 +94,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = Noise)
 		void MakeFootstepNoise();
 
+	FORCEINLINE FVector GetVelocityBeforeJump() const { return VelocityBeforeJump; }
 	FORCEINLINE float GetLastLookedTimer() const { return LastLookedTimer; }
 	FORCEINLINE float GetLastMovedTimer() const { return LastMovedTimer; }
 	FORCEINLINE float GetLookTimerTreshold() const { return LookTimerThreshold; }
