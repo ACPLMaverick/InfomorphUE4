@@ -226,6 +226,102 @@ void AInfomorphUE4Character::ProcessPossessionMaterial(float DeltaSeconds)
 	}
 }
 
+void AInfomorphUE4Character::ProcessCombatMode(float DeltaSeconds)
+{
+
+	CombatModeCheckTimer += DeltaSeconds;
+	if(CombatModeCheckTimer >= 1.0f)
+	{
+		CombatModeCheckTimer = 0.0f;
+		bool bWasInCombat = bIsInCombatMode;
+		CheckIfInCombatMode();
+		if(bWasInCombat ^ bIsInCombatMode)
+		{
+			if(bIsInCombatMode)
+			{
+				int32 CombatSoundIndex = FMath::RandRange(1, CombatSounds.Num()) - 1;
+				if(CombatSoundIndex < CombatSounds.Num())
+				{
+					CombatAudioComponent->SetSound(CombatSounds[CombatSoundIndex]);
+					CombatAudioComponent->SetVolumeMultiplier(0.0f);
+					CombatAudioComponent->Play();
+				}
+			}
+			else
+			{
+				AudioComponent->SetVolumeMultiplier(0.0f);
+				AudioComponent->Play();
+			}
+		}
+	}
+
+	if(bIsInCombatMode)
+	{
+		float CombatVolume = CombatAudioComponent->VolumeMultiplier;
+		CombatVolume += 3.0f * DeltaSeconds;
+		CombatVolume = FMath::Clamp(CombatVolume, 0.0f, 1.0f);
+		if(CombatVolume >= 1.0f)
+		{
+			AudioComponent->Stop();
+		}
+		CombatAudioComponent->SetVolumeMultiplier(CombatVolume);
+		AudioComponent->SetVolumeMultiplier(1.0f - CombatVolume);
+	}
+	else
+	{
+		float AmbientVolume = AudioComponent->VolumeMultiplier;
+		if(bIsChangingAmbient)
+		{
+			AmbientVolume -= 3.0f * DeltaSeconds;
+			if(AmbientVolume <= 0.0f)
+			{
+				bAmbientChanged = true;
+				bIsChangingAmbient = false;
+				AudioComponent->SetSound(CurrentAmbientSound);
+			}
+		}
+		else if(bAmbientChanged)
+		{
+			AmbientVolume += 3.0f * DeltaSeconds;
+			if(AmbientVolume >= 1.0f)
+			{
+				bAmbientChanged = false;
+			}
+		}
+		else
+		{
+			AmbientVolume += 3.0f * DeltaSeconds;
+			if(AmbientVolume >= 1.0f)
+			{
+				CombatAudioComponent->Stop();
+			}
+			CombatAudioComponent->SetVolumeMultiplier(1.0f - FMath::Clamp(AmbientVolume, 0.0f, 1.0f));
+		}
+		AudioComponent->SetVolumeMultiplier(FMath::Clamp(AmbientVolume, 0.0f, 1.0f));
+	}
+}
+
+void AInfomorphUE4Character::ProcessConsciousnessRegeneration(float DeltaSeconds)
+{
+	if(GetWorld() == nullptr)
+	{
+		return;
+	}
+
+	float RealTimeSeconds = GetWorld()->GetRealTimeSeconds();
+	if(bIsInCombatMode)
+	{
+		LastCombatModeTime = RealTimeSeconds;
+	}
+	else
+	{
+		if(RealTimeSeconds - LastCombatModeTime >= CharacterStats.ConsciousnessRegenerationCooldown)
+		{
+			CharacterStats.CurrentConsciousness = FMath::Clamp(CharacterStats.CurrentConsciousness + DeltaSeconds * CharacterStats.ConsciousnessRecoveryPerSecond, 0.0f, CharacterStats.BaseConsciousness);
+		}
+	}
+}
+
 void AInfomorphUE4Character::CheckIfInCombatMode()
 {
 	UWorld* World = GetWorld();
@@ -521,76 +617,8 @@ void AInfomorphUE4Character::Tick(float DeltaSeconds)
 		return;
 	}
 
-	CombatModeCheckTimer += DeltaSeconds;
-	if(CombatModeCheckTimer >= 1.0f)
-	{
-		CombatModeCheckTimer = 0.0f;
-		bool bWasInCombat = bIsInCombatMode;
-		CheckIfInCombatMode();
-		if(bWasInCombat ^ bIsInCombatMode)
-		{
-			if(bIsInCombatMode)
-			{
-				int32 CombatSoundIndex = FMath::RandRange(1, CombatSounds.Num()) - 1;
-				if(CombatSoundIndex < CombatSounds.Num())
-				{
-					CombatAudioComponent->SetSound(CombatSounds[CombatSoundIndex]);
-					CombatAudioComponent->SetVolumeMultiplier(0.0f);
-					CombatAudioComponent->Play();
-				}
-			}
-			else
-			{
-				AudioComponent->SetVolumeMultiplier(0.0f);
-				AudioComponent->Play();
-			}
-		}
-	}
-
-	if(bIsInCombatMode)
-	{
-		float CombatVolume = CombatAudioComponent->VolumeMultiplier;
-		CombatVolume += 3.0f * DeltaSeconds;
-		CombatVolume = FMath::Clamp(CombatVolume, 0.0f, 1.0f);
-		if(CombatVolume >= 1.0f)
-		{
-			AudioComponent->Stop();
-		}
-		CombatAudioComponent->SetVolumeMultiplier(CombatVolume);
-		AudioComponent->SetVolumeMultiplier(1.0f - CombatVolume);
-	}
-	else
-	{
-		float AmbientVolume = AudioComponent->VolumeMultiplier;
-		if(bIsChangingAmbient)
-		{
-			AmbientVolume -= 3.0f * DeltaSeconds;
-			if(AmbientVolume <= 0.0f)
-			{
-				bAmbientChanged = true;
-				bIsChangingAmbient = false;
-				AudioComponent->SetSound(CurrentAmbientSound);
-			}
-		}
-		else if(bAmbientChanged)
-		{
-			AmbientVolume += 3.0f * DeltaSeconds;
-			if(AmbientVolume >= 1.0f)
-			{
-				bAmbientChanged = false;
-			}
-		}
-		else
-		{
-			AmbientVolume += 3.0f * DeltaSeconds;
-			if(AmbientVolume >= 1.0f)
-			{
-				CombatAudioComponent->Stop();
-			}
-			CombatAudioComponent->SetVolumeMultiplier(1.0f - FMath::Clamp(AmbientVolume, 0.0f, 1.0f));
-		}
-		AudioComponent->SetVolumeMultiplier(FMath::Clamp(AmbientVolume, 0.0f, 1.0f));
-	}
+	ProcessCombatMode(DeltaSeconds);
+	ProcessConsciousnessRegeneration(DeltaSeconds);
 }
 
 void AInfomorphUE4Character::PossessedBy(AController* NewController)

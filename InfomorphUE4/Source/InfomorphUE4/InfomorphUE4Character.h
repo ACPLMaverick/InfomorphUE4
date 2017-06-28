@@ -27,6 +27,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stats)
 		float BaseConsciousness;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stats)
+		float ConsciousnessRecoveryPerSecond;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stats)
+		float ConsciousnessRegenerationCooldown;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stats)
 		float BaseEnergy;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stats)
 		float EnergyRecoveryPerSecond;
@@ -202,6 +206,7 @@ protected:
 	float FallingTimer;
 
 	float CombatModeCheckTimer;
+	float LastCombatModeTime;
 	bool bIsInCombatMode;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement)
@@ -215,6 +220,8 @@ protected:
 	void ProcessCameraLocked(float DeltaSeconds);
 	void ProcessInteractionTarget(float DeltaSeconds);
 	void ProcessPossessionMaterial(float DeltaSeconds);
+	void ProcessCombatMode(float DeltaSeconds);
+	void ProcessConsciousnessRegeneration(float DeltaSeconds);
 	void CheckIfInCombatMode();
 	void ProcessFalling(float DeltaSeconds);
 
