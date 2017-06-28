@@ -142,12 +142,12 @@ void AInfomorphBaseAIController::Tick(float DeltaSeconds)
 
 void AInfomorphBaseAIController::PauseBehaviorTree(const FString& Reason)
 {
-	BrainComponent->StopLogic(Reason);
+	((UBehaviorTreeComponent*)BrainComponent)->StopTree(EBTStopMode::Forced);
 }
 
 void AInfomorphBaseAIController::ResumeBehaviorTree()
 {
-	BrainComponent->RestartLogic();
+	((UBehaviorTreeComponent*)BrainComponent)->RestartTree();
 }
 
 bool AInfomorphBaseAIController::StartBlock()

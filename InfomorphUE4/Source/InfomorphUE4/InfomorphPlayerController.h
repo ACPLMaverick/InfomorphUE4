@@ -117,15 +117,17 @@ public:
 		FeedbackComponent->Stop();
 	}
 
-	FORCEINLINE bool IsUsingSkill() const
+	UFUNCTION(BlueprintCallable, Category = Skills)
+		FORCEINLINE bool IsUsingSkill() const
 	{
-		return Skills.IsValidIndex(CurrentSelectedSkillIndex) && Skills[CurrentSelectedSkillIndex].Skill != nullptr && Skills[CurrentSelectedSkillIndex].Skill->IsBeingUsed();
+		UInfomorphSkillBase* Skill = GetCurrentSkill();
+		return Skill != nullptr && Skill->IsBeingUsed();
 	}
 
 	UFUNCTION(BlueprintCallable, Category = Skills)
 		FORCEINLINE UInfomorphSkillBase* GetCurrentSkill() const
 	{
-		return CurrentSelectedSkillIndex < Skills.Num() ? Skills[CurrentSelectedSkillIndex].Skill : nullptr;
+		return (CurrentSelectedSkillIndex < Skills.Num() && Skills.Num() > 0) ? Skills[CurrentSelectedSkillIndex].Skill : nullptr;
 	}
 
 	UFUNCTION(BlueprintCallable, Category = Skills)

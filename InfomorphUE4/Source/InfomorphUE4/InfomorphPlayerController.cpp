@@ -386,10 +386,16 @@ void AInfomorphPlayerController::PossessNewCharacter(AInfomorphUE4Character* New
 	AInfomorphUE4Character* CurrentlyPossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
 	if(CurrentlyPossessedCharacter != nullptr)
 	{
+		UnPossess();
+		CurrentlyPossessedCharacter->SpawnDefaultController();
+		CurrentlyPossessedCharacter->Confuse(CurrentlyPossessedCharacter->GetCharacterStats().ConfusionUnpossessedTime);
 		CurrentlyPossessedCharacter->UnlockCamera();
 	}
+	if(NewCharacter != nullptr)
+	{
+		NewCharacter->Confuse(NewCharacter->GetCharacterStats().ConfusionPossessedTime);
+	}
 	Possess(NewCharacter);
-	CurrentlyPossessedCharacter->SpawnDefaultController();
 }
 
 void AInfomorphPlayerController::MakeFootstepNoise()

@@ -339,7 +339,20 @@ void AInfomorphUE4Character::CheckIfInCombatMode()
 	CollisionShape.SetSphere(CharacterStats.SightRange);
 
 	TArray<FHitResult> Hits;
-	bIsInCombatMode = World->SweepMultiByObjectType(Hits, GetActorLocation(), GetActorLocation(), FQuat::Identity, ObjectQueryParams, CollisionShape, TraceParams);
+	bool bWasHit = World->SweepMultiByObjectType(Hits, GetActorLocation(), GetActorLocation(), FQuat::Identity, ObjectQueryParams, CollisionShape, TraceParams);
+	if(bWasHit)
+	{
+		bIsInCombatMode = false;
+		const int32 HitsCount = Hits.Num();
+		for(int32 i = 0; i < HitsCount; ++i)
+		{
+			if(Hits[i].GetActor() != nullptr && Hits[i].GetActor()->IsA<AInfomorphUE4Character>())
+			{
+				bIsInCombatMode = true;
+				return;
+			}
+		}
+	}
 }
 
 void AInfomorphUE4Character::ProcessFalling(float DeltaSeconds)
@@ -623,11 +636,6 @@ void AInfomorphUE4Character::Tick(float DeltaSeconds)
 
 void AInfomorphUE4Character::PossessedBy(AController* NewController)
 {
-	AInfomorphBaseAIController* OldController = Cast<AInfomorphBaseAIController>(GetController());
-	if(OldController != nullptr)
-	{
-		OldController->PauseBehaviorTree("Unpossessed");
-	}
 	Super::PossessedBy(NewController);
 
 	if(NewController == nullptr)
@@ -654,7 +662,6 @@ void AInfomorphUE4Character::PossessedBy(AController* NewController)
 		}
 		bIsInCombatMode = false;
 
-		Confuse(CharacterStats.ConfusionPossessedTime);
 		InteractionSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		InteractionSphere->bGenerateOverlapEvents = true;
 		Light->SetVisibility(true);
@@ -667,8 +674,6 @@ void AInfomorphUE4Character::PossessedBy(AController* NewController)
 		AInfomorphBaseAIController* AIController = Cast<AInfomorphBaseAIController>(NewController);
 		if(AIController != nullptr)
 		{
-			AIController->ResumeBehaviorTree();
-			Confuse(CharacterStats.ConfusionUnpossessedTime);
 			InteractionSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 			InteractionSphere->bGenerateOverlapEvents = false;
 			Light->SetVisibility(false);
@@ -777,6 +782,10 @@ float AInfomorphUE4Character::TakeDamage(float DamageAmount, FDamageEvent const&
 		if(InfomorphPC != nullptr)
 		{
 			InfomorphPC->PlayFeedback(HitForceFeedback);
+			if(InfomorphPC->IsUsingSkill())
+			{
+				InfomorphPC->GetCurrentSkill()->StopUsing();
+			}
 		}
 		
 		if(IsConfused() || IsShieldBroken() || ActualDamage < CharacterStats.MinConsciousnessLostToPlayAnim)
