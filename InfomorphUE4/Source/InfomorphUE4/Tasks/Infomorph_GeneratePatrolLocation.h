@@ -14,6 +14,7 @@ class INFOMORPHUE4_API UInfomorph_GeneratePatrolLocation : public UBTTaskNode
 {
 	GENERATED_BODY()
 
+protected:
 	UPROPERTY(config, Category = Node, EditAnywhere, meta = (ClampMin = "0.0", UIMin = "0.0"))
 		float MinDistanceToPatrolLocation;
 
