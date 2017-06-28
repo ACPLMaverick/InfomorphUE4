@@ -695,6 +695,11 @@ float AInfomorphUE4Character::TakeDamage(float DamageAmount, FDamageEvent const&
 
 	AInfomorphPlayerController* InfomorphPC = Cast<AInfomorphPlayerController>(GetController());
 
+	if (InfomorphPC != nullptr && InfomorphPC->GetIsGodMode())
+	{
+		return 0.0f;
+	}
+
 	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
 	if(ActualDamage <= 0.0f)
