@@ -79,6 +79,13 @@ void UInfomorph_ChaseTarget::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* 
 
 EBTNodeResult::Type UInfomorph_ChaseTarget::PerformMove(AInfomorphBaseAIController* InfomorphAIController, AActor* Target)
 {
+	AInfomorphUE4Character* OwnerCharacter = Cast<AInfomorphUE4Character>(InfomorphAIController);
+	if(OwnerCharacter != nullptr && OwnerCharacter->IsConfused())
+	{
+		InfomorphAIController->StopMovement();
+		return EBTNodeResult::Failed;
+	}
+
 	EPathFollowingRequestResult::Type MoveResult =  InfomorphAIController->MoveToActor(Target, AcceptableRadius, false, true, false);
 
 	return MoveResult == EPathFollowingRequestResult::AlreadyAtGoal ? EBTNodeResult::Succeeded : EBTNodeResult::InProgress;

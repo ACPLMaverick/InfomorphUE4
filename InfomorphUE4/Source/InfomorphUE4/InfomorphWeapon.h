@@ -46,6 +46,9 @@ public:
 		CurrentDamage = NewDamage;
 	}
 
+	UFUNCTION(BlueprintCallable, Category = Collision)
+		bool IsCollisionEnabled() const;
+
 	virtual void EnableCollision();
 	virtual void DisableCollision();
 

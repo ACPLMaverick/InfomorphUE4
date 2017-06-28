@@ -87,6 +87,16 @@ void AInfomorphWeapon::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
+bool AInfomorphWeapon::IsCollisionEnabled() const
+{
+	if(CollisionCapsule == nullptr)
+	{
+		return false;
+	}
+
+	return CollisionCapsule->bGenerateOverlapEvents;
+}
+
 void AInfomorphWeapon::EnableCollision()
 {
 	CollisionCapsule->bGenerateOverlapEvents = true;
