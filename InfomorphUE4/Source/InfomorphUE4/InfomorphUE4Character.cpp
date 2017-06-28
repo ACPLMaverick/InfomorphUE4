@@ -50,6 +50,7 @@ FCharacterStats::FCharacterStats()
 	SpecialAttackCooldown = 10.0f;
 
 	bCanEverDodge = true;
+	bCanEverCrouch = false;
 }
 
 void FCharacterStats::Initialize()
@@ -895,7 +896,7 @@ void AInfomorphUE4Character::Dodge(const FVector& DodgeDirection)
 
 void AInfomorphUE4Character::EnterStealthMode()
 {
-	if(bIsInStealthMode)
+	if(bIsInStealthMode || !CharacterStats.bCanEverCrouch)
 	{
 		return;
 	}
