@@ -28,6 +28,8 @@ protected:
 		float LookTimerThreshold;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Skills)
 		TArray<FSkillInfo> Skills;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Debug)
+	bool bGodMode = false;
 
 	AInfomorphInteractable* CurrentInteractable;
 
@@ -90,6 +92,9 @@ public:
 	void InteractWithCurrentInteractable();
 
 	void SetTutorialWidget(class UInfomorphTutorialWidget* Widget);
+
+	UFUNCTION(BlueprintCallable, Category = Debug)
+		bool GetIsGodMode() { return bGodMode; }
 
 	UFUNCTION(BlueprintCallable, Category = Noise)
 		void MakeFootstepNoise();
