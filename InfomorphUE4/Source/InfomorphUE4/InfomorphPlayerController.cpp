@@ -2,6 +2,7 @@
 
 #include "InfomorphPlayerController.h"
 #include "InfomorphUE4Character.h"
+#include "InfomorphTelekineticPawn.h"
 #include "InfomorphTutorialWidget.h"
 #include "InfomorphUE4.h"
 #include "Camera/CameraComponent.h"
@@ -478,10 +479,25 @@ AActor* AInfomorphPlayerController::GetActorInLookDirection(const FVector& EyesL
 			}
 
 			AInfomorphUE4Character* InfomorphCharacter = Cast<AInfomorphUE4Character>(Hits[i].GetActor());
-			if(InfomorphCharacter == nullptr || InfomorphCharacter->IsDead())
+			if(InfomorphCharacter != nullptr && InfomorphCharacter->IsDead())
 			{
 				continue;
 			}
+
+			if(HitActor != nullptr)
+			{
+				if(HitActor->IsA<AInfomorphUE4Character>() && InfomorphCharacter == nullptr)
+				{
+					continue;
+				}
+			}
+
+			AInfomorphTelekineticPawn* TelekineticPawn = Cast<AInfomorphTelekineticPawn>(Hits[i].GetActor());
+			if(InfomorphCharacter == nullptr && (TelekineticPawn == nullptr || !TelekineticPawn->IsUsable()))
+			{
+				continue;
+			}
+
 
 			FVector ToHitLocation = Hits[i].GetActor()->GetActorLocation() - EyesLocation;
 			ToHitLocation.Normalize();
@@ -562,7 +578,11 @@ AActor* AInfomorphPlayerController::GetNextActorInDirection(float MaxDistance, A
 				continue;
 			}
 			AInfomorphUE4Character* InfomorphCharacter = Cast<AInfomorphUE4Character>(Candidate);
-			if(InfomorphCharacter != nullptr && InfomorphCharacter->IsDead())
+			if(CurrentActor->IsA<AInfomorphUE4Character>() && InfomorphCharacter == nullptr)
+			{
+				continue;
+			}
+			if(HitActor != nullptr && HitActor->IsA<AInfomorphUE4Character>() && InfomorphCharacter == nullptr)
 			{
 				continue;
 			}
