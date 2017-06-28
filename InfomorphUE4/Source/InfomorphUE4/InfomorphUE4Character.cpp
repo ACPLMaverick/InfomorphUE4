@@ -366,7 +366,11 @@ void AInfomorphUE4Character::ProcessFalling(float DeltaSeconds)
 		{
 			if(IsFallingFromHigh())
 			{
-				float Damage = FallingTimer * 10.0f;
+				float Damage = FallingTimer * 30.0f;
+				if(FallingTimer >= 2.0f)
+				{
+					Damage = CharacterStats.BaseConsciousness;
+				}
 				CharacterStats.CurrentConsciousness = FMath::Clamp(CharacterStats.CurrentConsciousness - Damage, 0.0f, CharacterStats.BaseConsciousness);
 			}
 

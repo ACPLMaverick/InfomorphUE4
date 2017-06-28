@@ -318,7 +318,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = Movement)
 		FORCEINLINE bool IsInAir() const { return bIsInAir; }
 	UFUNCTION(BlueprintCallable, Category = Movement)
-		FORCEINLINE bool IsFallingFromHigh() const { return FallingTimer >= 1.1f; }
+		FORCEINLINE bool IsFallingFromHigh() const { return FallingTimer >= 1.5f; }
 	UFUNCTION(BlueprintCallable, Category = Movement)
 		FORCEINLINE EMovementState GetMovementState() const { return MovementState; }
 
