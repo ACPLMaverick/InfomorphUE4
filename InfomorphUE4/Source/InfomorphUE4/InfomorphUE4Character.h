@@ -227,7 +227,7 @@ protected:
 
 	void DestroyActor();
 
-	bool IsTargetVisible(const FVector& Direction) const;
+	bool IsTargetVisible(AActor* Target) const;
 
 public:
 	AInfomorphUE4Character();
