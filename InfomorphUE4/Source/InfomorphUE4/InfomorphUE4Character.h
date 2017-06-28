@@ -100,6 +100,12 @@ protected:
 		class USpringArmComponent* CameraBoom;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 		class UCameraComponent* FollowCamera;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sound)
+		class UAudioComponent* AudioComponent;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sound)
+		class UAudioComponent* CombatAudioComponent;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sound)
+		class UAudioComponent* SFXAudioComponent;
 	
 	UPROPERTY(EditAnywhere, Category = Light)
 		class UPointLightComponent* Light;
@@ -124,6 +130,11 @@ protected:
 		FCharacterStats CharacterStats;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sounds)
+		class USoundBase* InitialAmbientSound;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sounds)
+		TArray<class USoundBase*> CombatSounds;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sounds)
 		class USoundBase* HitSound;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sounds)
 		class USoundBase* SpawnSound;
@@ -132,6 +143,8 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Effects)
 		class UForceFeedbackEffect* HitForceFeedback;
+
+	class USoundBase* CurrentAmbientSound;
 
 	AInfomorphWeapon* CurrentWeapon;
 	AInfomorphWeapon* CurrentSecondaryWeapon;
@@ -155,6 +168,9 @@ protected:
 	FVector DodgeWorldDirection;
 	FVector BeforeAttackDirection;
 	FVector InitialLocation;
+
+	bool bIsChangingAmbient;
+	bool bAmbientChanged;
 
 	float PossessionTime;
 	float LastTimeTargetSeen;
@@ -228,6 +244,9 @@ public:
 	virtual void UnlockCamera();
 
 	virtual void Dedigitalize();
+
+	UFUNCTION(BlueprintCallable, Category = Sound)
+		void SetNewAmbientSound(class USoundBase* NewAmbientSound);
 
 	UFUNCTION(BlueprintCallable, Category = Possession)
 		float GetPossessionChance(const FVector& PlayerLocation);

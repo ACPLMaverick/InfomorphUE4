@@ -15,6 +15,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/PointLightComponent.h"
+#include "Components/AudioComponent.h"
 #include "Sound/SoundBase.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -368,6 +369,15 @@ AInfomorphUE4Character::AInfomorphUE4Character()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
+	AudioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("SoundComponent"));
+	AudioComponent->SetupAttachment(FollowCamera);
+
+	CombatAudioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("CombatAudioComponent"));
+	CombatAudioComponent->SetupAttachment(FollowCamera);
+
+	SFXAudioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("SFXComponent"));
+	SFXAudioComponent->SetupAttachment(FollowCamera);
+
 	InteractionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("InteractionSphere"));
 	InteractionSphere->SetupAttachment(RootComponent);
 	InteractionSphere->SetSphereRadius(400.0f);
@@ -442,6 +452,11 @@ void AInfomorphUE4Character::BeginPlay()
 	MovementState = EMovementState::Normal;
 
 	Super::BeginPlay();
+
+	AudioComponent->SetSound(InitialAmbientSound);
+	AudioComponent->Play();
+	CurrentAmbientSound = InitialAmbientSound;
+	CombatAudioComponent->Stop();
 }
 
 void AInfomorphUE4Character::Tick(float DeltaSeconds)
@@ -497,14 +512,85 @@ void AInfomorphUE4Character::Tick(float DeltaSeconds)
 		ProcessCameraLocked(DeltaSeconds);
 	}
 
+	ProcessFalling(DeltaSeconds);
+
+	AInfomorphPlayerController* InfomorphPC = Cast<AInfomorphPlayerController>(GetController());
+	if(InfomorphPC == nullptr)
+	{
+		//Avoid combat checking and audio changing on AI characters
+		return;
+	}
+
 	CombatModeCheckTimer += DeltaSeconds;
 	if(CombatModeCheckTimer >= 1.0f)
 	{
 		CombatModeCheckTimer = 0.0f;
+		bool bWasInCombat = bIsInCombatMode;
 		CheckIfInCombatMode();
+		if(bWasInCombat ^ bIsInCombatMode)
+		{
+			if(bIsInCombatMode)
+			{
+				int32 CombatSoundIndex = FMath::RandRange(1, CombatSounds.Num()) - 1;
+				if(CombatSoundIndex < CombatSounds.Num())
+				{
+					CombatAudioComponent->SetSound(CombatSounds[CombatSoundIndex]);
+					CombatAudioComponent->SetVolumeMultiplier(0.0f);
+					CombatAudioComponent->Play();
+				}
+			}
+			else
+			{
+				AudioComponent->SetVolumeMultiplier(0.0f);
+				AudioComponent->Play();
+			}
+		}
 	}
 
-	ProcessFalling(DeltaSeconds);
+	if(bIsInCombatMode)
+	{
+		float CombatVolume = CombatAudioComponent->VolumeMultiplier;
+		CombatVolume += 3.0f * DeltaSeconds;
+		CombatVolume = FMath::Clamp(CombatVolume, 0.0f, 1.0f);
+		if(CombatVolume >= 1.0f)
+		{
+			AudioComponent->Stop();
+		}
+		CombatAudioComponent->SetVolumeMultiplier(CombatVolume);
+		AudioComponent->SetVolumeMultiplier(1.0f - CombatVolume);
+	}
+	else
+	{
+		float AmbientVolume = AudioComponent->VolumeMultiplier;
+		if(bIsChangingAmbient)
+		{
+			AmbientVolume -= 3.0f * DeltaSeconds;
+			if(AmbientVolume <= 0.0f)
+			{
+				bAmbientChanged = true;
+				bIsChangingAmbient = false;
+				AudioComponent->SetSound(CurrentAmbientSound);
+			}
+		}
+		else if(bAmbientChanged)
+		{
+			AmbientVolume += 3.0f * DeltaSeconds;
+			if(AmbientVolume >= 1.0f)
+			{
+				bAmbientChanged = false;
+			}
+		}
+		else
+		{
+			AmbientVolume += 3.0f * DeltaSeconds;
+			if(AmbientVolume >= 1.0f)
+			{
+				CombatAudioComponent->Stop();
+			}
+			CombatAudioComponent->SetVolumeMultiplier(1.0f - FMath::Clamp(AmbientVolume, 0.0f, 1.0f));
+		}
+		AudioComponent->SetVolumeMultiplier(FMath::Clamp(AmbientVolume, 0.0f, 1.0f));
+	}
 }
 
 void AInfomorphUE4Character::PossessedBy(AController* NewController)
@@ -527,6 +613,19 @@ void AInfomorphUE4Character::PossessedBy(AController* NewController)
 	AInfomorphPlayerController* InfomorphPC = Cast<AInfomorphPlayerController>(NewController);
 	if(InfomorphPC != nullptr)
 	{
+		CheckIfInCombatMode();
+		if(bIsInCombatMode)
+		{
+			CombatAudioComponent->SetVolumeMultiplier(1.0f);
+			CombatAudioComponent->Play();
+		}
+		else
+		{
+			AudioComponent->SetVolumeMultiplier(1.0f);
+			AudioComponent->Play();
+		}
+		bIsInCombatMode = false;
+
 		Confuse(CharacterStats.ConfusionPossessedTime);
 		InteractionSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		InteractionSphere->bGenerateOverlapEvents = true;
@@ -535,6 +634,8 @@ void AInfomorphUE4Character::PossessedBy(AController* NewController)
 	else
 	{
 		//Check if this is an AI controller
+		CombatAudioComponent->Stop();
+		AudioComponent->Stop();
 		AInfomorphBaseAIController* AIController = Cast<AInfomorphBaseAIController>(NewController);
 		if(AIController != nullptr)
 		{
@@ -669,7 +770,9 @@ float AInfomorphUE4Character::TakeDamage(float DamageAmount, FDamageEvent const&
 		}
 		else
 		{
-			UGameplayStatics::PlaySoundAtLocation(GetWorld(), HitSound, GetActorLocation());
+			SFXAudioComponent->SetSound(HitSound);
+			SFXAudioComponent->Play();
+			//UGameplayStatics::PlaySoundAtLocation(GetWorld(), HitSound, GetActorLocation());
 		}
 	}
 
@@ -905,7 +1008,9 @@ void AInfomorphUE4Character::UnlockCamera()
 void AInfomorphUE4Character::Dedigitalize()
 {
 	ResetState();
-	UGameplayStatics::PlaySoundAtLocation(GetWorld(), DeathSound, GetActorLocation());
+	//UGameplayStatics::PlaySoundAtLocation(GetWorld(), DeathSound, GetActorLocation());
+	SFXAudioComponent->SetSound(DeathSound);
+	SFXAudioComponent->Play();
 	AInfomorphPlayerController* InfomorphPC = Cast<AInfomorphPlayerController>(GetController());
 	if(InfomorphPC == nullptr)
 	{
@@ -917,6 +1022,17 @@ void AInfomorphUE4Character::Dedigitalize()
 		//It's player so respawn after dedigitialize
 		GetWorldTimerManager().SetTimer(DedigitalizeTimerHandle, GetWorld()->GetAuthGameMode(), &AGameModeBase::ResetLevel, 3.0f);
 	}
+}
+
+void AInfomorphUE4Character::SetNewAmbientSound(USoundBase* NewAmbientSound)
+{
+	if(CurrentAmbientSound == NewAmbientSound)
+	{
+		return;
+	}
+	CurrentAmbientSound = NewAmbientSound;
+	bIsChangingAmbient = true;
+	bAmbientChanged = false;
 }
 
 float AInfomorphUE4Character::GetPossessionChance(const FVector& PlayerLocation)
