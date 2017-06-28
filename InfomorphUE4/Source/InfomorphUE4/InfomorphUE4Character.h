@@ -66,6 +66,8 @@ public:
 		float HeavyAttackDamage;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Damage)
 		float SpecialAttackDamage;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Offset)
+		float SpecialAttackOffset;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Cooldowns)
 		float SpecialAttackCooldown;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Abilities)
@@ -335,6 +337,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = Attack) 
 		void ResetAttacks()
 	{
+		if(bIsSpecialAttack)
+		{
+			FVector Location = GetActorLocation() + CharacterStats.SpecialAttackOffset * GetActorForwardVector();
+			SetActorLocation(Location);
+		}
+
 		bIsLightAttack = false;
 		bIsHeavyAttack = false;
 		bIsSpecialAttack = false;
