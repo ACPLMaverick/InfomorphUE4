@@ -5,6 +5,7 @@
 #include "InfomorphTelekineticPawn.h"
 #include "InfomorphTutorialWidget.h"
 #include "InfomorphUE4.h"
+#include "InfomorphSkillTelekinesis.h"
 #include "Camera/CameraComponent.h"
 #include "UObject/UObjectIterator.h"
 #include "Perception/AISense_Hearing.h"
@@ -366,20 +367,58 @@ void AInfomorphPlayerController::PerformStopSkillUsage()
 
 void AInfomorphPlayerController::PerformSkillSelectUp()
 {
+	bool bWasTelekinesis = Cast<UInfomorphSkillTelekinesis>(GetCurrentSkill()) != nullptr;
 	if(IsUsingSkill())
 	{
 		Skills[CurrentSelectedSkillIndex].Skill->StopUsing();
 	}
-	CurrentSelectedSkillIndex = (CurrentSelectedSkillIndex + 1) % Skills.Num();
+	CurrentSelectedSkillIndex = (CurrentSelectedSkillIndex + 1);
+	if(CurrentSelectedSkillIndex >= Skills.Num())
+	{
+		CurrentSelectedSkillIndex = 0;
+	}
+	bool bIsTelekinesis = Cast<UInfomorphSkillTelekinesis>(GetCurrentSkill()) != nullptr;
+
+	if(bWasTelekinesis && !bIsTelekinesis)
+	{
+		AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
+		if(PossessedCharacter != nullptr)
+		{
+			AInfomorphTelekineticPawn* TelekineticPawn = Cast<AInfomorphTelekineticPawn>(PossessedCharacter->GetCameraTarget());
+			if(TelekineticPawn != nullptr)
+			{
+				PossessedCharacter->UnlockCamera();
+			}
+		}
+	}
 }
 
 void AInfomorphPlayerController::PerformSkillSelectDown()
 {
+	bool bWasTelekinesis = Cast<UInfomorphSkillTelekinesis>(GetCurrentSkill()) != nullptr;
 	if(IsUsingSkill())
 	{
 		Skills[CurrentSelectedSkillIndex].Skill->StopUsing();
 	}
-	CurrentSelectedSkillIndex = (CurrentSelectedSkillIndex - 1) % Skills.Num();
+	CurrentSelectedSkillIndex = (CurrentSelectedSkillIndex - 1);
+	if(CurrentSelectedSkillIndex < 0)
+	{
+		CurrentSelectedSkillIndex = Skills.Num() - 1;
+	}
+	bool bIsTelekinesis = Cast<UInfomorphSkillTelekinesis>(GetCurrentSkill()) != nullptr;
+
+	if(bWasTelekinesis && !bIsTelekinesis)
+	{
+		AInfomorphUE4Character* PossessedCharacter = Cast<AInfomorphUE4Character>(GetPawn());
+		if(PossessedCharacter != nullptr)
+		{
+			AInfomorphTelekineticPawn* TelekineticPawn = Cast<AInfomorphTelekineticPawn>(PossessedCharacter->GetCameraTarget());
+			if(TelekineticPawn != nullptr)
+			{
+				PossessedCharacter->UnlockCamera();
+			}
+		}
+	}
 }
 
 void AInfomorphPlayerController::PossessNewCharacter(AInfomorphUE4Character* NewCharacter)
@@ -484,6 +523,7 @@ AActor* AInfomorphPlayerController::GetActorInLookDirection(const FVector& EyesL
 	AActor* HitActor = nullptr;
 	TArray<FHitResult> Hits;
 	bool bWasHit = World->SweepMultiByObjectType(Hits, EyesLocation, EyesLocation + Direction * MaxDistance, GetControlRotation().Quaternion(), ObjectQueryParams, CollisionShape, TraceParams);
+	bool bIsTelekinesisSkill = Cast<UInfomorphSkillTelekinesis>(GetCurrentSkill()) != nullptr;
 
 	if(bWasHit)
 	{
@@ -515,11 +555,10 @@ AActor* AInfomorphPlayerController::GetActorInLookDirection(const FVector& EyesL
 			}
 
 			AInfomorphTelekineticPawn* TelekineticPawn = Cast<AInfomorphTelekineticPawn>(Hits[i].GetActor());
-			if(InfomorphCharacter == nullptr && (TelekineticPawn == nullptr || !TelekineticPawn->IsUsable()))
+			if(InfomorphCharacter == nullptr && (TelekineticPawn == nullptr || !TelekineticPawn->IsUsable() || !bIsTelekinesisSkill))
 			{
 				continue;
 			}
-
 
 			FVector ToHitLocation = Hits[i].GetActor()->GetActorLocation() - EyesLocation;
 			ToHitLocation.Normalize();

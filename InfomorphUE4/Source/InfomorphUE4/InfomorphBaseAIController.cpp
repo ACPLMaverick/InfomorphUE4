@@ -31,8 +31,7 @@ void AInfomorphBaseAIController::OnTargetPerceptionUpdated(AActor* Actor, FAISti
 		if(InfomorphPC != nullptr)
 		{
 			Blackboard->SetValueAsVector("LastTargetKnownLocation", SensedCharacter->GetActorLocation());
-			bIsPlayerNoticed = Stimulus.WasSuccessfullySensed();
-			if(bIsPlayerNoticed)
+			if(Stimulus.WasSuccessfullySensed())
 			{
 				Blackboard->SetValueAsObject("Target", SensedCharacter);
 			}
@@ -114,6 +113,30 @@ void AInfomorphBaseAIController::Possess(APawn* InPawn)
 void AInfomorphBaseAIController::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+
+	if(Blackboard != nullptr)
+	{
+		AActor* Target = Cast<AActor>(Blackboard->GetValueAsObject("Target"));
+		if(Target != nullptr)
+		{
+			if(GetWorld() != nullptr)
+			{
+				LastPlayerNoticedTime = GetWorld()->GetRealTimeSeconds();
+				bIsPlayerNoticed = true;
+			}
+		}
+		else
+		{
+			if(GetWorld() != nullptr)
+			{
+				if(GetWorld()->GetRealTimeSeconds() - LastPlayerNoticedTime > 2.0f)
+				{
+					bIsPlayerNoticed = false;
+				}
+			}
+		}
+	}
+
 	AInfomorphUE4Character* InfomorphCharacter = Cast<AInfomorphUE4Character>(GetPawn());
 	if(InfomorphCharacter != nullptr)
 	{

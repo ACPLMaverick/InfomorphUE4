@@ -133,7 +133,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = Skills)
 		FORCEINLINE UInfomorphSkillBase* GetCurrentSkill() const
 	{
-		return (CurrentSelectedSkillIndex < Skills.Num() && Skills.Num() > 0) ? Skills[CurrentSelectedSkillIndex].Skill : nullptr;
+		return (CurrentSelectedSkillIndex >= 0 && CurrentSelectedSkillIndex < Skills.Num() && Skills.Num() > 0) ? Skills[CurrentSelectedSkillIndex].Skill : nullptr;
 	}
 
 	UFUNCTION(BlueprintCallable, Category = Skills)

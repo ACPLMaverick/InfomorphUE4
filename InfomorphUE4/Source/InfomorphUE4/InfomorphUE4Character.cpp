@@ -19,6 +19,8 @@
 #include "Sound/SoundBase.h"
 #include "Kismet/GameplayStatics.h"
 
+#include "DrawDebugHelpers.h"
+
 FCharacterStats::FCharacterStats()
 {
 	BaseConsciousness = 80.0f;
@@ -105,9 +107,7 @@ void AInfomorphUE4Character::ProcessCameraLocked(float DeltaSeconds)
 		return;
 	}
 
-	Direction.Normalize();
-
-	if(IsTargetVisible(Direction))
+	if(IsTargetVisible(CameraTarget))
 	{
 		LastTimeTargetSeen = FPlatformTime::Seconds();
 	}
@@ -228,7 +228,6 @@ void AInfomorphUE4Character::ProcessPossessionMaterial(float DeltaSeconds)
 
 void AInfomorphUE4Character::ProcessCombatMode(float DeltaSeconds)
 {
-
 	CombatModeCheckTimer += DeltaSeconds;
 	if(CombatModeCheckTimer >= 1.0f)
 	{
@@ -336,20 +335,23 @@ void AInfomorphUE4Character::CheckIfInCombatMode()
 	ObjectQueryParams.AddObjectTypesToQuery(ECollisionChannel::ECC_Pawn);
 	FCollisionQueryParams TraceParams(TraceTag, true, this);
 	FCollisionShape CollisionShape;
-	CollisionShape.SetSphere(CharacterStats.SightRange);
+	CollisionShape.SetBox(FVector(CharacterStats.SightRange * 0.5f, CharacterStats.SightRange * 0.5f, CharacterStats.SightRange * 0.1f));
 
+	bIsInCombatMode = false;
 	TArray<FHitResult> Hits;
 	bool bWasHit = World->SweepMultiByObjectType(Hits, GetActorLocation(), GetActorLocation(), FQuat::Identity, ObjectQueryParams, CollisionShape, TraceParams);
 	if(bWasHit)
 	{
-		bIsInCombatMode = false;
 		const int32 HitsCount = Hits.Num();
 		for(int32 i = 0; i < HitsCount; ++i)
 		{
 			if(Hits[i].GetActor() != nullptr && Hits[i].GetActor()->IsA<AInfomorphUE4Character>())
 			{
-				bIsInCombatMode = true;
-				return;
+				bIsInCombatMode = IsTargetVisible(Hits[i].GetActor()) || (GetCameraTarget() != nullptr && GetCameraTarget()->IsA<AInfomorphUE4Character>());
+				if(bIsInCombatMode)
+				{
+					return;
+				}
 			}
 		}
 	}
@@ -415,10 +417,10 @@ void AInfomorphUE4Character::DestroyActor()
 	}
 }
 
-bool AInfomorphUE4Character::IsTargetVisible(const FVector& Direction) const
+bool AInfomorphUE4Character::IsTargetVisible(AActor* Target) const
 {
 	UWorld* World = GetWorld();
-	if(World == nullptr)
+	if(World == nullptr || Target == nullptr)
 	{
 		return false;
 	}
@@ -426,7 +428,7 @@ bool AInfomorphUE4Character::IsTargetVisible(const FVector& Direction) const
 	static const FName TraceTag = TEXT("TargetVisibleTest");
 
 	FCollisionObjectQueryParams ObjectQueryParams;
-	ObjectQueryParams.AddObjectTypesToQuery(ECollisionChannel::ECC_Visibility);
+	ObjectQueryParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldStatic);
 	FCollisionQueryParams TraceParams(TraceTag, true, this);
 	TraceParams.AddIgnoredActor(CurrentWeapon);
 	TraceParams.AddIgnoredActor(CurrentSecondaryWeapon);
@@ -434,11 +436,11 @@ bool AInfomorphUE4Character::IsTargetVisible(const FVector& Direction) const
 
 	AActor* HitActor = nullptr;
 	FHitResult Hit;
-	bool bWasHit = World->LineTraceSingleByObjectType(Hit, GetEyesLocation(), GetEyesLocation() + Direction * CharacterStats.SightRange, ObjectQueryParams, TraceParams);
+	bool bWasHit = World->LineTraceSingleByObjectType(Hit, GetEyesLocation(), Target->GetActorLocation(), ObjectQueryParams, TraceParams);
 
 	if(bWasHit)
 	{
-		LogOnScreen(9876543, Hit.GetActor() != nullptr ? Hit.GetActor()->GetName() : "nothing?");
+		bWasHit = Hit.GetActor() != nullptr && Hit.GetActor()->WasRecentlyRendered();
 	}
 
 	return !bWasHit;
@@ -627,6 +629,8 @@ void AInfomorphUE4Character::Tick(float DeltaSeconds)
 	if(InfomorphPC == nullptr)
 	{
 		//Avoid combat checking and audio changing on AI characters
+		CombatAudioComponent->Stop();
+		AudioComponent->Stop();
 		return;
 	}
 
