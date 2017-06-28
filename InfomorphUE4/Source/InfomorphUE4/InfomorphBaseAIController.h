@@ -25,6 +25,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Perception", meta = (BlueprintProtected = "true"))
 		class UAISenseConfig_Damage* SenseConfig_Damage;
 
+	float LastPlayerNoticedTime;
 	bool bIsPlayerNoticed;
 
 protected:
@@ -52,5 +53,8 @@ public:
 	bool IsAttacking() const;
 
 	UFUNCTION(BlueprintCallable, Category = Perception)
-		bool IsPlayerNoticed() const { return bIsPlayerNoticed; }
+		bool IsPlayerNoticed() const 
+	{
+		return bIsPlayerNoticed; 
+	}
 };
