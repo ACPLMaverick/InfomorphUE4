@@ -409,6 +409,28 @@ void AInfomorphPlayerController::MakeFootstepNoise()
 	}
 }
 
+void AInfomorphPlayerController::SetCurrentTelekineticPawn(AInfomorphTelekineticPawn * Telekinetic)
+{
+	if (CurrentTelekineticPawn == Telekinetic)
+	{
+		return;
+	}
+
+	if (Telekinetic == nullptr || CurrentTelekineticPawn == nullptr)
+	{
+		CurrentTelekineticPawn = Telekinetic;
+		return;
+	}
+
+	float DistToCurrent = (CurrentTelekineticPawn->GetActorLocation() - GetPawn()->GetActorLocation()).SizeSquared();
+	float DistToNew = (Telekinetic->GetActorLocation() - GetPawn()->GetActorLocation()).SizeSquared();
+
+	if (DistToNew < DistToCurrent)
+	{
+		CurrentTelekineticPawn = Telekinetic;
+	}
+}
+
 void AInfomorphPlayerController::InteractWithCurrentInteractable()
 {
 	if(!IsInteractionPossible())
