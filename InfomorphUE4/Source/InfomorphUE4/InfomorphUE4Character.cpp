@@ -15,6 +15,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/PointLightComponent.h"
+#include "Components/AudioComponent.h"
 #include "Sound/SoundBase.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -65,7 +66,7 @@ void AInfomorphUE4Character::ProcessCameraLocked(float DeltaSeconds)
 
 	AInfomorphUE4Character* TargetCharacter = Cast<AInfomorphUE4Character>(CameraTarget);
 	AInfomorphPlayerController* InfomorphPC = Cast<AInfomorphPlayerController>(GetController());
-	if((TargetCharacter != nullptr && TargetCharacter->IsDead()) || IsDead())
+	if((TargetCharacter != nullptr && TargetCharacter->IsDead()))
 	{
 		if(InfomorphPC != nullptr)
 		{
@@ -90,10 +91,15 @@ void AInfomorphUE4Character::ProcessCameraLocked(float DeltaSeconds)
 		}
 		return;
 	}
+	if(IsDead())
+	{
+		UnlockCamera();
+		return;
+	}
 
 	FVector Direction = CameraTarget->GetActorLocation() - GetEyesLocation();
 	
-	if(Direction.Size() > CharacterStats.SightRange)
+	if(Direction.Size() > 1.5f * CharacterStats.SightRange)
 	{
 		UnlockCamera();
 		return;
@@ -220,6 +226,102 @@ void AInfomorphUE4Character::ProcessPossessionMaterial(float DeltaSeconds)
 	}
 }
 
+void AInfomorphUE4Character::ProcessCombatMode(float DeltaSeconds)
+{
+
+	CombatModeCheckTimer += DeltaSeconds;
+	if(CombatModeCheckTimer >= 1.0f)
+	{
+		CombatModeCheckTimer = 0.0f;
+		bool bWasInCombat = bIsInCombatMode;
+		CheckIfInCombatMode();
+		if(bWasInCombat ^ bIsInCombatMode)
+		{
+			if(bIsInCombatMode)
+			{
+				int32 CombatSoundIndex = FMath::RandRange(1, CombatSounds.Num()) - 1;
+				if(CombatSoundIndex < CombatSounds.Num())
+				{
+					CombatAudioComponent->SetSound(CombatSounds[CombatSoundIndex]);
+					CombatAudioComponent->SetVolumeMultiplier(0.0f);
+					CombatAudioComponent->Play();
+				}
+			}
+			else
+			{
+				AudioComponent->SetVolumeMultiplier(0.0f);
+				AudioComponent->Play();
+			}
+		}
+	}
+
+	if(bIsInCombatMode)
+	{
+		float CombatVolume = CombatAudioComponent->VolumeMultiplier;
+		CombatVolume += 3.0f * DeltaSeconds;
+		CombatVolume = FMath::Clamp(CombatVolume, 0.0f, 1.0f);
+		if(CombatVolume >= 1.0f)
+		{
+			AudioComponent->Stop();
+		}
+		CombatAudioComponent->SetVolumeMultiplier(CombatVolume);
+		AudioComponent->SetVolumeMultiplier(1.0f - CombatVolume);
+	}
+	else
+	{
+		float AmbientVolume = AudioComponent->VolumeMultiplier;
+		if(bIsChangingAmbient)
+		{
+			AmbientVolume -= 3.0f * DeltaSeconds;
+			if(AmbientVolume <= 0.0f)
+			{
+				bAmbientChanged = true;
+				bIsChangingAmbient = false;
+				AudioComponent->SetSound(CurrentAmbientSound);
+			}
+		}
+		else if(bAmbientChanged)
+		{
+			AmbientVolume += 3.0f * DeltaSeconds;
+			if(AmbientVolume >= 1.0f)
+			{
+				bAmbientChanged = false;
+			}
+		}
+		else
+		{
+			AmbientVolume += 3.0f * DeltaSeconds;
+			if(AmbientVolume >= 1.0f)
+			{
+				CombatAudioComponent->Stop();
+			}
+			CombatAudioComponent->SetVolumeMultiplier(1.0f - FMath::Clamp(AmbientVolume, 0.0f, 1.0f));
+		}
+		AudioComponent->SetVolumeMultiplier(FMath::Clamp(AmbientVolume, 0.0f, 1.0f));
+	}
+}
+
+void AInfomorphUE4Character::ProcessConsciousnessRegeneration(float DeltaSeconds)
+{
+	if(GetWorld() == nullptr)
+	{
+		return;
+	}
+
+	float RealTimeSeconds = GetWorld()->GetRealTimeSeconds();
+	if(bIsInCombatMode)
+	{
+		LastCombatModeTime = RealTimeSeconds;
+	}
+	else
+	{
+		if(RealTimeSeconds - LastCombatModeTime >= CharacterStats.ConsciousnessRegenerationCooldown)
+		{
+			CharacterStats.CurrentConsciousness = FMath::Clamp(CharacterStats.CurrentConsciousness + DeltaSeconds * CharacterStats.ConsciousnessRecoveryPerSecond, 0.0f, CharacterStats.BaseConsciousness);
+		}
+	}
+}
+
 void AInfomorphUE4Character::CheckIfInCombatMode()
 {
 	UWorld* World = GetWorld();
@@ -282,12 +384,16 @@ void AInfomorphUE4Character::ProcessFalling(float DeltaSeconds)
 
 void AInfomorphUE4Character::DestroyActor()
 {
-	LogOnScreen("DESTROY MADAFAKA!");
 	Destroy();
 	if(CurrentWeapon != nullptr)
 	{
 		CurrentWeapon->Destroy();
 		CurrentWeapon = nullptr;
+	}
+	if(CurrentSecondaryWeapon != nullptr)
+	{
+		CurrentSecondaryWeapon->Destroy();
+		CurrentSecondaryWeapon = nullptr;
 	}
 	if(CurrentShield != nullptr)
 	{
@@ -307,15 +413,22 @@ bool AInfomorphUE4Character::IsTargetVisible(const FVector& Direction) const
 	static const FName TraceTag = TEXT("TargetVisibleTest");
 
 	FCollisionObjectQueryParams ObjectQueryParams;
-	ObjectQueryParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldStatic);
-	ObjectQueryParams.AddObjectTypesToQuery(ECollisionChannel::ECC_Pawn);
+	ObjectQueryParams.AddObjectTypesToQuery(ECollisionChannel::ECC_Visibility);
 	FCollisionQueryParams TraceParams(TraceTag, true, this);
+	TraceParams.AddIgnoredActor(CurrentWeapon);
+	TraceParams.AddIgnoredActor(CurrentSecondaryWeapon);
+	TraceParams.AddIgnoredActor(CurrentShield);
 
 	AActor* HitActor = nullptr;
 	FHitResult Hit;
 	bool bWasHit = World->LineTraceSingleByObjectType(Hit, GetEyesLocation(), GetEyesLocation() + Direction * CharacterStats.SightRange, ObjectQueryParams, TraceParams);
 
-	return Hit.GetActor() != nullptr && Hit.GetActor()->IsA<AInfomorphUE4Character>();
+	if(bWasHit)
+	{
+		LogOnScreen(9876543, Hit.GetActor() != nullptr ? Hit.GetActor()->GetName() : "nothing?");
+	}
+
+	return !bWasHit;
 }
 
 AInfomorphUE4Character::AInfomorphUE4Character()
@@ -351,6 +464,15 @@ AInfomorphUE4Character::AInfomorphUE4Character()
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
+
+	AudioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("SoundComponent"));
+	AudioComponent->SetupAttachment(FollowCamera);
+
+	CombatAudioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("CombatAudioComponent"));
+	CombatAudioComponent->SetupAttachment(FollowCamera);
+
+	SFXAudioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("SFXComponent"));
+	SFXAudioComponent->SetupAttachment(FollowCamera);
 
 	InteractionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("InteractionSphere"));
 	InteractionSphere->SetupAttachment(RootComponent);
@@ -403,6 +525,13 @@ void AInfomorphUE4Character::BeginPlay()
 		CurrentWeapon->SetActorRelativeLocation(FVector::ZeroVector);
 		CurrentWeapon->SetActorRelativeRotation(FQuat::Identity);
 	}
+	CurrentSecondaryWeapon = GetWorld()->SpawnActor<AInfomorphWeapon>(SecondaryWeaponClass.Get());
+	if(CurrentSecondaryWeapon != nullptr)
+	{
+		CurrentSecondaryWeapon->AttachToComponent((USceneComponent*)GetMesh(), AttachmentRules, SecondaryWeaponSocketName);
+		CurrentSecondaryWeapon->SetActorRelativeLocation(FVector::ZeroVector);
+		CurrentSecondaryWeapon->SetActorRelativeRotation(FQuat::Identity);
+	}
 
 	CurrentShield = GetWorld()->SpawnActor<AInfomorphShield>(ShieldClass.Get());
 	if(CurrentShield != nullptr)
@@ -419,6 +548,11 @@ void AInfomorphUE4Character::BeginPlay()
 	MovementState = EMovementState::Normal;
 
 	Super::BeginPlay();
+
+	AudioComponent->SetSound(InitialAmbientSound);
+	AudioComponent->Play();
+	CurrentAmbientSound = InitialAmbientSound;
+	CombatAudioComponent->Stop();
 }
 
 void AInfomorphUE4Character::Tick(float DeltaSeconds)
@@ -474,14 +608,17 @@ void AInfomorphUE4Character::Tick(float DeltaSeconds)
 		ProcessCameraLocked(DeltaSeconds);
 	}
 
-	CombatModeCheckTimer += DeltaSeconds;
-	if(CombatModeCheckTimer >= 1.0f)
+	ProcessFalling(DeltaSeconds);
+
+	AInfomorphPlayerController* InfomorphPC = Cast<AInfomorphPlayerController>(GetController());
+	if(InfomorphPC == nullptr)
 	{
-		CombatModeCheckTimer = 0.0f;
-		CheckIfInCombatMode();
+		//Avoid combat checking and audio changing on AI characters
+		return;
 	}
 
-	ProcessFalling(DeltaSeconds);
+	ProcessCombatMode(DeltaSeconds);
+	ProcessConsciousnessRegeneration(DeltaSeconds);
 }
 
 void AInfomorphUE4Character::PossessedBy(AController* NewController)
@@ -504,6 +641,19 @@ void AInfomorphUE4Character::PossessedBy(AController* NewController)
 	AInfomorphPlayerController* InfomorphPC = Cast<AInfomorphPlayerController>(NewController);
 	if(InfomorphPC != nullptr)
 	{
+		CheckIfInCombatMode();
+		if(bIsInCombatMode)
+		{
+			CombatAudioComponent->SetVolumeMultiplier(1.0f);
+			CombatAudioComponent->Play();
+		}
+		else
+		{
+			AudioComponent->SetVolumeMultiplier(1.0f);
+			AudioComponent->Play();
+		}
+		bIsInCombatMode = false;
+
 		Confuse(CharacterStats.ConfusionPossessedTime);
 		InteractionSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		InteractionSphere->bGenerateOverlapEvents = true;
@@ -512,6 +662,8 @@ void AInfomorphUE4Character::PossessedBy(AController* NewController)
 	else
 	{
 		//Check if this is an AI controller
+		CombatAudioComponent->Stop();
+		AudioComponent->Stop();
 		AInfomorphBaseAIController* AIController = Cast<AInfomorphBaseAIController>(NewController);
 		if(AIController != nullptr)
 		{
@@ -554,11 +706,19 @@ float AInfomorphUE4Character::TakeDamage(float DamageAmount, FDamageEvent const&
 		FVector Forward = GetActorForwardVector();
 		Dot = FVector::DotProduct(PredatorForward, Forward);
 	}
-	if(bIsBlocking && Dot < -0.5f && !bShieldBroken)
+	bool bCanBlock = bIsBlocking && !IsAttacking() && !bShieldBroken && Dot < -0.5f;
+	if(bCanBlock)
 	{
-		EnergyLost = CharacterStats.BlockEnergyCost * ActualDamage;
+		if(Predator != nullptr && Predator->CharacterStats.bBreaksBlockEveryHit)
+		{
+			EnergyLost = CharacterStats.CurrentEnergy + 10.0f;
+		}
+		else
+		{
+			EnergyLost = CharacterStats.BlockEnergyCost * ActualDamage;
+		}
 		ActualDamage = 0.0f;
-		if(EnergyLost > CharacterStats.CurrentEnergy)
+		if(EnergyLost >= CharacterStats.CurrentEnergy)
 		{
 			EnergyLost = CharacterStats.CurrentEnergy;
 			EndBlock();
@@ -619,7 +779,7 @@ float AInfomorphUE4Character::TakeDamage(float DamageAmount, FDamageEvent const&
 			InfomorphPC->PlayFeedback(HitForceFeedback);
 		}
 		
-		if(IsConfused() || IsShieldBroken())
+		if(IsConfused() || IsShieldBroken() || ActualDamage < CharacterStats.MinConsciousnessLostToPlayAnim)
 		{
 			bWasHit = false;
 		}
@@ -638,7 +798,9 @@ float AInfomorphUE4Character::TakeDamage(float DamageAmount, FDamageEvent const&
 		}
 		else
 		{
-			UGameplayStatics::PlaySoundAtLocation(GetWorld(), HitSound, GetActorLocation());
+			SFXAudioComponent->SetSound(HitSound);
+			SFXAudioComponent->Play();
+			//UGameplayStatics::PlaySoundAtLocation(GetWorld(), HitSound, GetActorLocation());
 		}
 	}
 
@@ -649,7 +811,6 @@ void AInfomorphUE4Character::FellOutOfWorld(const UDamageType& DamageType)
 {
 	if(!IsDead())
 	{
-		LogOnScreen("Bye bye, cruel world!");
 		Dedigitalize();
 	}
 	CharacterStats.CurrentConsciousness = 0.0f;
@@ -657,7 +818,10 @@ void AInfomorphUE4Character::FellOutOfWorld(const UDamageType& DamageType)
 
 void AInfomorphUE4Character::StartBlock()
 {
-	bIsBlocking = true;
+	if(CharacterStats.bCanEverBlock)
+	{
+		bIsBlocking = true;
+	}
 }
 
 void AInfomorphUE4Character::EndBlock()
@@ -753,6 +917,10 @@ void AInfomorphUE4Character::Attack()
 	{
 		CurrentWeapon->SetDamage(CharacterStats.LightAttackDamage);
 	}
+	if(CurrentSecondaryWeapon != nullptr)
+	{
+		CurrentSecondaryWeapon->SetDamage(CharacterStats.LightAttackDamage);
+	}
 }
 
 void AInfomorphUE4Character::HeavyAttack()
@@ -778,6 +946,10 @@ void AInfomorphUE4Character::HeavyAttack()
 	if(CurrentWeapon != nullptr)
 	{
 		CurrentWeapon->SetDamage(CharacterStats.HeavyAttackDamage);
+	}
+	if(CurrentSecondaryWeapon != nullptr)
+	{
+		CurrentSecondaryWeapon->SetDamage(CharacterStats.HeavyAttackDamage);
 	}
 }
 
@@ -811,6 +983,10 @@ void AInfomorphUE4Character::SpecialAttack()
 	if(CurrentWeapon != nullptr)
 	{
 		CurrentWeapon->SetDamage(CharacterStats.SpecialAttackDamage);
+	}
+	if(CurrentSecondaryWeapon != nullptr)
+	{
+		CurrentSecondaryWeapon->SetDamage(CharacterStats.SpecialAttackDamage);
 	}
 }
 
@@ -860,12 +1036,13 @@ void AInfomorphUE4Character::UnlockCamera()
 void AInfomorphUE4Character::Dedigitalize()
 {
 	ResetState();
-	UGameplayStatics::PlaySoundAtLocation(GetWorld(), DeathSound, GetActorLocation());
+	//UGameplayStatics::PlaySoundAtLocation(GetWorld(), DeathSound, GetActorLocation());
+	SFXAudioComponent->SetSound(DeathSound);
+	SFXAudioComponent->Play();
 	AInfomorphPlayerController* InfomorphPC = Cast<AInfomorphPlayerController>(GetController());
 	if(InfomorphPC == nullptr)
 	{
 		//It's AI so call Destroy after dedigitalize
-		LogOnScreen("Hello");
 		GetWorldTimerManager().SetTimer(DedigitalizeTimerHandle, this, &AInfomorphUE4Character::DestroyActor, 3.0f);
 	}
 	else
@@ -873,6 +1050,17 @@ void AInfomorphUE4Character::Dedigitalize()
 		//It's player so respawn after dedigitialize
 		GetWorldTimerManager().SetTimer(DedigitalizeTimerHandle, GetWorld()->GetAuthGameMode(), &AGameModeBase::ResetLevel, 3.0f);
 	}
+}
+
+void AInfomorphUE4Character::SetNewAmbientSound(USoundBase* NewAmbientSound)
+{
+	if(CurrentAmbientSound == NewAmbientSound)
+	{
+		return;
+	}
+	CurrentAmbientSound = NewAmbientSound;
+	bIsChangingAmbient = true;
+	bAmbientChanged = false;
 }
 
 float AInfomorphUE4Character::GetPossessionChance(const FVector& PlayerLocation)
@@ -890,6 +1078,18 @@ float AInfomorphUE4Character::GetPossessionChance(const FVector& PlayerLocation)
 	}
 
 	return 0.0f;
+}
+
+void AInfomorphUE4Character::PerformJump()
+{
+	AInfomorphPlayerController* InfomorphPC = Cast<AInfomorphPlayerController>(GetController());
+	if(InfomorphPC == nullptr)
+	{
+		return;
+	}
+
+	GetCharacterMovement()->Velocity = InfomorphPC->GetVelocityBeforeJump();
+	Jump();
 }
 
 void AInfomorphUE4Character::Confuse(float ConfusionTime, float Multiplier)
@@ -959,6 +1159,10 @@ void AInfomorphUE4Character::EnableWeaponCollision()
 	{
 		CurrentWeapon->EnableCollision();
 	}
+	if(CurrentSecondaryWeapon != nullptr)
+	{
+		CurrentSecondaryWeapon->EnableCollision();
+	}
 }
 
 void AInfomorphUE4Character::DisableWeaponCollision()
@@ -966,6 +1170,10 @@ void AInfomorphUE4Character::DisableWeaponCollision()
 	if(CurrentWeapon != nullptr)
 	{
 		CurrentWeapon->DisableCollision();
+	}
+	if(CurrentSecondaryWeapon != nullptr)
+	{
+		CurrentSecondaryWeapon->DisableCollision();
 	}
 }
 

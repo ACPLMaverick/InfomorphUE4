@@ -331,6 +331,8 @@ void AInfomorphPlayerController::PerformJump()
 			PossessedCharacter->ExitStealthMode();
 		}
 		//PossessedCharacter->Jump();
+		VelocityBeforeJump = PossessedCharacter->GetCharacterMovement()->Velocity;
+		MovementMultiplier = 0.0f;
 		PossessedCharacter->SetWantsToJump(true);
 	}
 }

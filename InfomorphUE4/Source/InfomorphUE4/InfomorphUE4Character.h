@@ -27,6 +27,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stats)
 		float BaseConsciousness;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stats)
+		float ConsciousnessRecoveryPerSecond;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stats)
+		float ConsciousnessRegenerationCooldown;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stats)
 		float BaseEnergy;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stats)
 		float EnergyRecoveryPerSecond;
@@ -36,6 +40,8 @@ public:
 		float ConsciousnessArmorWhenPossessed;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stats)
 		float ConsciousnessPercentPossessable;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stats)
+		float MinConsciousnessLostToPlayAnim;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stats)
 		float DodgeSpeed;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Confusion)
@@ -64,10 +70,16 @@ public:
 		float HeavyAttackDamage;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Damage)
 		float SpecialAttackDamage;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Offset)
+		float SpecialAttackOffset;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Cooldowns)
 		float SpecialAttackCooldown;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Abilities)
 		bool bCanEverDodge;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Abilities)
+		bool bCanEverBlock;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Abilities)
+		bool bBreaksBlockEveryHit;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Movement)
 		float MaxSpeed;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Movement)
@@ -92,6 +104,12 @@ protected:
 		class USpringArmComponent* CameraBoom;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 		class UCameraComponent* FollowCamera;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sound)
+		class UAudioComponent* AudioComponent;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sound)
+		class UAudioComponent* CombatAudioComponent;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sound)
+		class UAudioComponent* SFXAudioComponent;
 	
 	UPROPERTY(EditAnywhere, Category = Light)
 		class UPointLightComponent* Light;
@@ -101,15 +119,24 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = Weapon)
 		TSubclassOf<AInfomorphWeapon> WeaponClass;
+	UPROPERTY(EditAnywhere, Category = Weapon)
+		TSubclassOf<AInfomorphWeapon> SecondaryWeaponClass;
 	UPROPERTY(EditAnywhere, Category = Shield)
 		TSubclassOf<AInfomorphShield> ShieldClass;
 	UPROPERTY(EditAnywhere, Category = Weapon)
 		FName WeaponSocketName;
+	UPROPERTY(EditAnywhere, Category = Weapon)
+		FName SecondaryWeaponSocketName;
 	UPROPERTY(EditAnywhere, Category = Shield)
 		FName ShieldSocketName;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stats)
 		FCharacterStats CharacterStats;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sounds)
+		class USoundBase* InitialAmbientSound;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sounds)
+		TArray<class USoundBase*> CombatSounds;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sounds)
 		class USoundBase* HitSound;
@@ -121,7 +148,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Effects)
 		class UForceFeedbackEffect* HitForceFeedback;
 
+	class USoundBase* CurrentAmbientSound;
+
 	AInfomorphWeapon* CurrentWeapon;
+	AInfomorphWeapon* CurrentSecondaryWeapon;
 	AInfomorphShield* CurrentShield;
 
 	AActor* CameraTarget;
@@ -142,6 +172,9 @@ protected:
 	FVector DodgeWorldDirection;
 	FVector BeforeAttackDirection;
 	FVector InitialLocation;
+
+	bool bIsChangingAmbient;
+	bool bAmbientChanged;
 
 	float PossessionTime;
 	float LastTimeTargetSeen;
@@ -173,6 +206,7 @@ protected:
 	float FallingTimer;
 
 	float CombatModeCheckTimer;
+	float LastCombatModeTime;
 	bool bIsInCombatMode;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement)
@@ -186,6 +220,8 @@ protected:
 	void ProcessCameraLocked(float DeltaSeconds);
 	void ProcessInteractionTarget(float DeltaSeconds);
 	void ProcessPossessionMaterial(float DeltaSeconds);
+	void ProcessCombatMode(float DeltaSeconds);
+	void ProcessConsciousnessRegeneration(float DeltaSeconds);
 	void CheckIfInCombatMode();
 	void ProcessFalling(float DeltaSeconds);
 
@@ -216,8 +252,14 @@ public:
 
 	virtual void Dedigitalize();
 
+	UFUNCTION(BlueprintCallable, Category = Sound)
+		void SetNewAmbientSound(class USoundBase* NewAmbientSound);
+
 	UFUNCTION(BlueprintCallable, Category = Possession)
 		float GetPossessionChance(const FVector& PlayerLocation);
+
+	UFUNCTION(BlueprintCallable, Category = Movement)
+		void PerformJump();
 
 	void Confuse(float ConfusionTime, float Multiplier = 1.0f);
 	void ConfusionEnd();
@@ -321,6 +363,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = Attack) 
 		void ResetAttacks()
 	{
+		if(bIsSpecialAttack)
+		{
+			FVector Location = GetActorLocation() + CharacterStats.SpecialAttackOffset * GetActorForwardVector();
+			SetActorLocation(Location);
+		}
+
 		bIsLightAttack = false;
 		bIsHeavyAttack = false;
 		bIsSpecialAttack = false;
@@ -368,7 +416,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = Attack)
 		void PlayWeaponSound()
 	{
-		CurrentWeapon->PlayAttackSound();
+		if(CurrentWeapon != nullptr)
+		{
+			CurrentWeapon->PlayAttackSound();
+		}
+		if(CurrentSecondaryWeapon != nullptr)
+		{
+			CurrentSecondaryWeapon->PlayAttackSound();
+		}
 	}
 
 	UFUNCTION(BlueprintCallable, Category = Dodge) 
@@ -494,6 +549,12 @@ public:
 		FORCEINLINE AInfomorphWeapon* GetCurrentWeapon()
 	{
 		return CurrentWeapon;
+	}
+
+	UFUNCTION(BlueprintCallable, Category = Weapon)
+		FORCEINLINE AInfomorphWeapon* GetCurrentSecondaryWeapon()
+	{
+		return CurrentSecondaryWeapon;
 	}
 
 	UFUNCTION(BlueprintCallable, Category = Shield)
