@@ -75,6 +75,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Cooldowns)
 		float SpecialAttackCooldown;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Abilities)
+		bool bCanEverCrouch;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Abilities)
 		bool bCanEverDodge;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Abilities)
 		bool bCanEverBlock;
