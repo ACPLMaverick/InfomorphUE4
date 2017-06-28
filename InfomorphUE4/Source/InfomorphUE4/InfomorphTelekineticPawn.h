@@ -17,6 +17,8 @@ protected:
 		UStaticMeshComponent* Mesh;
 	UPROPERTY(EditAnywhere, Category = Collision)
 		USphereComponent* SphereCollision;
+	UPROPERTY(EditAnywhere, Category = Collision)
+		USphereComponent* AreaTrigger;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Telekinesis)
 		FVector TargetLocation;
@@ -47,6 +49,8 @@ public:
 
 	void MoveToTarget(float HeightOffset, class AInfomorphPlayerController* InfomorphPlayerController);
 	void Drop();
+
+	void OnLeave(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 	UFUNCTION(BlueprintCallable, Category = Telekinesis)
 		bool IsUsable() const { return bIsUsable; }

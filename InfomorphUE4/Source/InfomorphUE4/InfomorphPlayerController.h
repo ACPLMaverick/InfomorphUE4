@@ -32,6 +32,7 @@ protected:
 	bool bGodMode = false;
 
 	AInfomorphInteractable* CurrentInteractable;
+	class AInfomorphTelekineticPawn* CurrentTelekineticPawn;
 
 	FVector VelocityBeforeJump;
 	float LastLookedTimer;
@@ -152,6 +153,15 @@ public:
 	{
 		return CurrentInteractable;
 	}
+
+	UFUNCTION(BlueprintCallable, Category = Telekinesis)
+		FORCEINLINE AInfomorphTelekineticPawn* GetCurrentTelekineticPawn() const
+	{
+		return CurrentTelekineticPawn;
+	}
+
+	UFUNCTION(BlueprintCallable, Category = Telekinesis)
+		void SetCurrentTelekineticPawn(AInfomorphTelekineticPawn* Telekinetic);
 
 	//Returns float from 0 to 1, where 1 means that whole cooldown remains and 0 means that skill is ready
 	UFUNCTION(BlueprintCallable, Category = Skills)

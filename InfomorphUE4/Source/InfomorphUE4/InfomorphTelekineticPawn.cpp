@@ -4,6 +4,7 @@
 #include "InfomorphPlayerController.h"
 #include "InfomorphUE4Character.h"
 #include "Components/StaticMeshComponent.h"
+#include "Engine.h"
 
 // Sets default values
 AInfomorphTelekineticPawn::AInfomorphTelekineticPawn() : Super()
@@ -13,6 +14,7 @@ AInfomorphTelekineticPawn::AInfomorphTelekineticPawn() : Super()
 
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	SphereCollision = CreateDefaultSubobject<USphereComponent>(TEXT("Sphere"));
+	AreaTrigger = CreateDefaultSubobject<USphereComponent>(TEXT("AreaTrigger"));
 	if(RootComponent == nullptr)
 	{
 		RootComponent = (USceneComponent*)SphereCollision;
@@ -21,8 +23,14 @@ AInfomorphTelekineticPawn::AInfomorphTelekineticPawn() : Super()
 	{
 		SphereCollision->SetupAttachment(RootComponent);
 	}
+	AreaTrigger->SetupAttachment(RootComponent);
 	Mesh->SetupAttachment(SphereCollision);
 	SphereCollision->SetCollisionObjectType(ECollisionChannel::ECC_Pawn);
+	AreaTrigger->SetCollisionObjectType(ECollisionChannel::ECC_Pawn);
+	AreaTrigger->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Overlap);
+	AreaTrigger->bGenerateOverlapEvents = true;
+	AreaTrigger->OnComponentEndOverlap.AddDynamic(this, &AInfomorphTelekineticPawn::OnLeave);
+	AreaTrigger->SetSphereRadius(512.0f);
 	
 	bIsUsable = true;
 }
@@ -31,6 +39,31 @@ AInfomorphTelekineticPawn::AInfomorphTelekineticPawn() : Super()
 void AInfomorphTelekineticPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	TArray<AActor*> Overlapping;
+	GetOverlappingActors(Overlapping, AInfomorphUE4Character::StaticClass());
+	int32 OverlappingSize = Overlapping.Num();
+	bool bPlayerFound = false;
+	for (int32 i = 0; i < OverlappingSize; ++i)
+	{
+		AController* Controller = (Cast<AInfomorphUE4Character>(Overlapping[i]))->GetController();
+		AInfomorphPlayerController* PC = Cast<AInfomorphPlayerController>(Controller);
+		if (PC == nullptr)
+		{
+			continue;
+		}
+
+		PC->SetCurrentTelekineticPawn(this);
+		bPlayerFound = true;
+
+		break;
+	}
+
+	if (!bPlayerFound)
+	{
+		AInfomorphPlayerController* PC = Cast<AInfomorphPlayerController>(GetGameInstance()->GetFirstGamePlayer()->GetPlayerController(GetWorld()));
+		PC->SetCurrentTelekineticPawn(nullptr);
+	}
 
 	if(bIsMoving)
 	{
@@ -98,5 +131,15 @@ void AInfomorphTelekineticPawn::Drop()
 	if(SphereCollision != nullptr)
 	{
 		SphereCollision->SetSimulatePhysics(true);
+	}
+}
+
+void AInfomorphTelekineticPawn::OnLeave(UPrimitiveComponent* OverlappedComp, AActor * OtherActor, UPrimitiveComponent * OtherComp, int32 OtherBodyIndex)
+{
+	AController* Controller = (Cast<AInfomorphUE4Character>(OtherActor))->GetController();
+	AInfomorphPlayerController* PC = Cast<AInfomorphPlayerController>(Controller);
+	if (PC != nullptr)
+	{
+		PC->SetCurrentTelekineticPawn(nullptr);
 	}
 }
